@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ELEX World</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="leaflet.css" />
+    <script src="leaflet.js"></script>
+
+    <style>
+        #mapid { width: 400px; height: 400x; }
+    </style>
+    <style>
+        body { padding: 0; margin: 0; }
+        html, body, #mapid { height: 100%; width: 100%; }
+    </style>
+</head>
+
+<body>
+<div id="mapid"></div>
+
+<script>
+    var tileRes = 512;
+    terrainSize = 10000; // :FIXIT
+
+    var terrainCorners = 
+        [[-(terrainSize * 0.5) - tileRes, -(terrainSize * 0.5) - tileRes],
+        [terrainSize * 0.25  + tileRes, terrainSize * 0.25 + tileRes]];
+
+    var a = tileRes / terrainSize;
+    var b = tileRes / 2;
+    L.CRS.Map = L.extend({}, L.CRS.Simple, {
+        transformation: new L.Transformation(a, b, -a, b),
+    });
+
+    var layer = L.tileLayer('', {
+        minNativeZoom: 0,
+        maxNativeZoom: 3,
+        errorTileUrl: '404.webp',
+        tileSize: tileRes,
+        noWrap: true,
+        continuousWorld: true,
+    });
+
+    layer.setUrl('map_512/elex-{z}-{y}-{x}.webp')
+
+    var l = [ layer ]
+
+    var mymap = L.map('mapid', {
+        crs: L.CRS.Map,
+        center: [0, 0],
+        zoom: 1,
+        minZoom: 0,
+        maxZoom: 4,
+        layers: l,
+        maxBounds: terrainCorners,
+        attributionControl: false,
+        //zoomSnap: 0.5,
+        //zoomDelta: 0.5,
+    });
+
+    var baseMap = { "base": layer };
+
+    //L.control.layers(baseMap, icons, {hideSingleBase: true}).addTo(mymap);
+    L.control.scale({maxWidth: 200, updateWhenIdle: true}).addTo(mymap);
+</script>
+
+</body>
+</html>
