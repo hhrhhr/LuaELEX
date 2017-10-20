@@ -1,4 +1,8 @@
-== unpack map tiles ==
+# Demands
+Lua 5.3
+lua-zlib
+
+# Unpack map tiles
 
 ````lua pak_unpack_map.lua path_to\c_1_na.pak output_dir````
 
