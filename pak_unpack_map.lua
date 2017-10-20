@@ -134,17 +134,25 @@ local function get_file(fullpath)
                 dds = parse_csv(data)
 
                 r:seek(pos)
-                
+
                 io.write("save dds...")
             end
         else
             local dds_name = dds[fname]
             if dds_name then
                 local pos = r:pos()
+                r:seek(offset)
 
-                r:seek(offset + 44)
-                local data = r:str(f_sizez)
-                if 1 == f_enc then data = unlz(data) end
+                -- 4 bytes ("GAR5") + 40 bytes + data + 36 bytes
+                r:idstring("GAR5")
+                r:seek(offset + f_sizez - 36)
+                local off = r:uint32()
+                local sz = r:uint32()
+
+                r:seek(offset + off)
+                local data = r:str(sz)
+                if 1 == f_com then data = unlz(data) end
+
                 save_file(OUT .. "/" .. dds_name, data)
                 io.write(".")
 
