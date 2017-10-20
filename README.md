@@ -6,7 +6,7 @@
 
 # Get map tiles
 
-[![map example](/docs/img/map_example.jpg?raw=true "Example map with Leafjet")](https://hhrhhr.github.io/LuaELEX/elex.html)
+[![map example](/docs/img/map_example.jpg?raw=true "Example low quality map with Leafjet")](https://hhrhhr.github.io/LuaELEX/elex.html)
 
 ````
 if not exist .\map_dds mkdir .\map_dds
@@ -45,4 +45,4 @@ After that, instead of 1983 pieces of original tiles gets only 540.
 
 To customize the output format, you need to edit the variable ````magick4```` and ````tile```` in ````tga_256_to_512_webp.lua````.
 
-Now the received tiles can be used, for example, [in a Leafjet-based map](https://hhrhhr.github.io/LuaELEX/elex.html).
+Now the received tiles can be used, for example, [in a Leafjet-based map](https://hhrhhr.github.io/LuaELEX/elex.html) (low quality, only 4 levels).
