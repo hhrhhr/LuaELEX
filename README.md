@@ -1,8 +1,10 @@
 # Demands
-Lua 5.3
-lua-zlib
+* Lua 5.3
+* lua-zlib
 
 # Get map tiles
+
+[![map example](/docs/img/map_example.jpg?raw=true "Example map with Leafjet")](https://hhrhhr.github.io/LuaELEX/elex.html)
 
 ````
 if not exist .\map_dds mkdir .\map_dds
@@ -24,6 +26,8 @@ for /r .\map_dds %i in (*.dds) do @CompressonatorCLI "%i" ".\map_tga\%~ni.tga"
 
 For a web-map tiles with the size 256x256 are pretty small, so you can combine them into tiles 512x512 by using ImageMagick and the script ````tga_256_to_512_webp.lua````:
 
+![about merge](/docs/img/merge.jpg?raw=true "merge 4 to 1")
+
 ````
 rem Make filelist
 dir /b /s .\map_tga\*.tga > .\map_tga\tga_filelist.txt
@@ -34,6 +38,8 @@ lua tga_256_to_512_webp.lua .\map_tga\tga_filelist.txt .\map_www > convert.cmd
 rem Running the resulting batch-file
 convert.cmd
 ````
+
+After that, instead of 1983 pieces of original tiles gets only 540.
 
 To customize the output format, you need to edit the variable ````magick4```` and ````tile```` in ````tga_256_to_512_webp.lua````.
 
