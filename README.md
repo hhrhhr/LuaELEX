@@ -1,6 +1,8 @@
 # Demands
-* Lua 5.3
-* lua-zlib
+* [Lua 5.3](https://www.lua.org/)
+* [lua-zlib](https://github.com/brimworks/lua-zlib)
+* [Compressonator](https://gpuopen.com/gaming-product/compressonator/)
+* [ImageMagick](https://www.imagemagick.org/script/index.php)
 
 # Get map tiles
 
