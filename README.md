@@ -46,3 +46,25 @@ After that, instead of 1983 pieces of original tiles gets only 540.
 To customize the output format, you need to edit the variable ````magick4```` and ````tile```` in ````tga_256_to_512_webp.lua````.
 
 Now the received tiles can be used, for example, [in a Leafjet-based map](https://hhrhhr.github.io/LuaELEX/elex.html) (low quality, only 4 levels).
+
+# Parse World_Teleporter.sec
+
+First, you need to generate a hash table of all the strings in the file (*...\ELEX\system\ELEX.exe*). Using *nix-utilities do this is very simple:
+
+````
+strings -3 ELEX.exe | grep "^[A-Za-z][A-Za-z <>_\-]\+$" | LANG=C sort | uniq > strings.txt
+````
+
+After that it is required to generate a hash table for further use:
+
+````
+lua generate_hash.lua strings.txt > hash_names.lua
+````
+
+Beforehand, you need to unpack some .rom file, for example, to find the coordinates of teleports you need ````...\0_na_sec\0\9\w_sec_0_na_935f1e52.rom````. The correspondence of the hexadecimal code of the file name can be found in ````...\0_na_sec\w_sec_0_na.csv````, in this case, the name of the file is ````World_Teleporter.sec````.
+
+Now everything is ready to run a fairly universal *gar5_parser.lua*:
+
+````
+lua gar5_parser.lua World_Teleporter.sec > World_Teleporter.txt
+````
