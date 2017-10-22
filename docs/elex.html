@@ -19,9 +19,10 @@
 <body>
 <div id="mapid"></div>
 
+<script src="teleport.js"></script>
 <script>
     var tileRes = 512;
-    terrainSize = 10000; // :FIXIT
+    terrainSize = 81920 * 10; // TODO: check it
 
     var terrainCorners = 
         [[-(terrainSize * 0.5) - tileRes, -(terrainSize * 0.5) - tileRes],
@@ -44,7 +45,18 @@
 
     layer.setUrl('map_512/elex-{z}-{y}-{x}.webp')
 
-    var l = [ layer ]
+    var Teleport = new L.LayerGroup(), test = new L.LayerGroup();
+
+    var layers = [ layer, Teleport, test ];
+
+    var icons = { "Teleport": Teleport, "test": test };
+
+    L.marker([0, 0], {title: "Center"}).addTo(test);
+    add_markers()
+
+    L.Icon.Default.prototype.options.iconSize = [12, 20];
+    L.Icon.Default.prototype.options.iconAnchor = [6, 20];
+    L.Icon.Default.prototype.options.shadowSize = [20, 20];
 
     var mymap = L.map('mapid', {
         crs: L.CRS.Map,
@@ -52,7 +64,7 @@
         zoom: 1,
         minZoom: 0,
         maxZoom: 4,
-        layers: l,
+        layers: layers,
         maxBounds: terrainCorners,
         attributionControl: false,
         //zoomSnap: 0.5,
@@ -61,8 +73,8 @@
 
     var baseMap = { "base": layer };
 
-    //L.control.layers(baseMap, icons, {hideSingleBase: true}).addTo(mymap);
-    L.control.scale({maxWidth: 200, updateWhenIdle: true}).addTo(mymap);
+    L.control.layers(baseMap, icons, {hideSingleBase: true}).addTo(mymap);
+    L.control.scale({maxWidth: 400, updateWhenIdle: true}).addTo(mymap);
 </script>
 
 </body>
