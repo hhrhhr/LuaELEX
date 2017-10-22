@@ -129,6 +129,17 @@ function BinaryReader:hex32(inverse)  -- hex
     return h32
 end
 
+function BinaryReader:hex16(inverse)  -- hex
+    local b1, b2 = string.byte(self.f_handle:read(2), 1, 2)
+    local h16
+    if inverse then
+        h16 = string.format("%02X%02X", b2, b1)
+    else
+        h16 = string.format("%02X%02X", b1, b2)
+    end
+    return h16
+end
+
 function BinaryReader:float(endian_big)  -- float
     local f
     if endian_big then
