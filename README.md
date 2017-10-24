@@ -68,3 +68,12 @@ Now everything is ready to run a fairly universal *gar5_parser.lua*:
 ````
 lua gar5_parser.lua World_Teleporter.sec > World_Teleporter.txt
 ````
+
+# Patch unpacker
+
+Show the list of files in the archive or unpack them all:
+
+````
+lua pXX_unpack.lua path_to.p00
+lua pXX_unpack.lua path_to.p00 output_dir
+````
