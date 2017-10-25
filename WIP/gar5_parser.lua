@@ -39,13 +39,18 @@ local function tab(l)
     tab_level = l
 end
 
+local hash_unknown = {}
 
 local function get_name(id)
     local n = NAMES[id] and NAMES[id][2]
     if n then
         return n, true
     else
-        return string.format("0x%08X", id), false
+        local hash = string.format("0x%08X", id)
+        if not hash_unknown[hash] then
+            hash_unknown[hash] = true
+        end
+        return hash, false
     end
 end
 
@@ -102,28 +107,31 @@ local function read_script_proxy()
 end
 
 local function read_class(level)
-    local pos = r:pos()
-
     local class = get_name(r:uint32())
     local version = r:uint16()
     local size = r:uint32()
+    local pos = r:pos()
 
     tab(level)
-    wr(("[\"%s\"] = { -- v%d, [%d], off 0x%08X\n"):format(class, version, size, pos))
+    wr(("[\"%s\"] = { -- c v%d, [%d], off 0x%08X\n"):format(class, version, size, pos))
 
     return class, version, size
 end
 
 local function read_array(level)
     wr("{\n")
+
     local count = r:uint32()
     for i = 1, count do
         tab(level+1)
         wf("[\"%d\"] = { -- of %d\n", i, count)
+
         read_FOUR(level+2)
+
         tab(level+1)
         wf("}%s -- array %d/%d\n", i<count and "," or "", i, count)
     end
+
     tab(level)
     wr("}")
 end
@@ -164,11 +172,12 @@ local function read_unknown_bytes(size, comment)
     end
 
     if size > max then
-        wr("... \n" .. size .. " bytes\n")
+        wr("... \n" .. size .. " bytes ")
     elseif size > 16 then
-        wr(size .. " bytes\n")
+        wr(size .. " bytes ")
     end
     wr("--]]\n")
+--    tab(level)
 
     -- skip this data
     r:seek(start + size)
@@ -189,13 +198,14 @@ hash["class eCEntityProxy"]         = function() read_guid() end
 hash["class eCTemplateEntityProxy"] = function() read_guid() end
 
 hash["class bCMatrix"]      = function() read_float(16) end
+hash["class bCMotion"]      = function() read_float(7) end
 hash["class bCVector"]      = function() read_float(3) end
 hash["class bCFloatColor"]  = function() read_float(3) end
 hash["class bCRange1"]      = function() read_float(2) end
 
-hash["class eCScriptProxyScript"]       = function() read_script_proxy() end
-hash["class gCScriptProxyAIState"]      = function() read_script_proxy() end
-hash["class gCScriptProxyAIFunction"]   = function() read_script_proxy() end
+--hash["class eCScriptProxyScript"]       = function() read_script_proxy() end
+--hash["class gCScriptProxyAIState"]      = function() read_script_proxy() end
+--hash["class gCScriptProxyAIFunction"]   = function() read_script_proxy() end
 
 hash["class eCLocString"] = function()
     local hex = r:hex32(1)
@@ -205,9 +215,11 @@ end
 
 hash["class bCString"] = function() read_string() end
 hash["class gCEffectProxy"] = function() read_string() end
-hash["class eTResourceProxy<class eCMeshResource2>"] = function() read_string() end
-hash["class eTResourceProxy<class eCCollisionMeshResource2>"] = function() read_string() end
-hash["class eTResourceProxy<class eCMotionNetworkDefResource2>"] = function() read_string() end
+
+--hash["class eTResourceProxy<class eCMeshResource2>"] = function() read_string() end
+--hash["class eTResourceProxy<class eCImageResource2>"] = function() read_string() end
+--hash["class eTResourceProxy<class eCCollisionMeshResource2>"] = function() read_string() end
+--hash["class eTResourceProxy<class eCMotionNetworkDefResource2>"] = function() read_string() end
 
 hash["class eCCollisionShapeList"] = function()
     local count = r:uint32()
@@ -219,20 +231,22 @@ hash["class eCCollisionShapeList"] = function()
     end
 end
 
-hash["class bTSceneObjArray<class gCModifySkill>"] = function(level) read_array(level) end
-hash["class bTSceneObjArray<class gCSkillValue>"] = function(level) read_array(level) end
-hash["class bTSceneObjArray<class gCInteraction>"] = function(level) read_array(level) end
+--hash["class bTSceneObjArray<class gCModifySkill>"] = function(level) read_array(level) end
+--hash["class bTSceneObjArray<class gCSkillValue>"] = function(level) read_array(level) end
+--hash["class bTSceneObjArray<class gCInteraction>"] = function(level) read_array(level) end
+
 
 hash["0xBD7025AF"] = function(level, size)
     local start = r:pos()
     local unk1 = r:uint16()
     assert(1 == unk1)
-    local unk2 = r:hex32(1)
-    local unk3 = r:uint32()
+    local unk2 = r:float()
+    local count = r:uint32()
     -- 10 bytes
-    tab(level)
-    wf("[\"%s\"] = { -- %d*8 + 2*3 floats\n", unk2, unk3)
-    for i = 1, unk3 do
+--    tab(level)
+--    wf("[\"%s\"] = { -- %d*8 + 2*3 floats\n", var_name, count)
+    wf("%10.2f, -- %d*8 + 2*3 floats\n", unk2, count)
+    for i = 1, count do
         for j = 1, 8 do
             wf("%10.2f, ", r:float())
         end
@@ -244,12 +258,29 @@ hash["0xBD7025AF"] = function(level, size)
         end
         wr("\n")
     end
-    tab(level)
-    wr("}\n")
+--    tab(level)
+--    wr("}\n")
+end
+
+hash["0x889E4D02"] = function(level, size)  -- ["Shapes"] = ...
+    wr(" --[[0x889E4D02]] ")
+    read_array(level)
 end
 
 
+
 --[[ func ]]-------------------------------------------------------------------
+
+local function execute_func(class_name, level, size, not_found_comment)
+    local c = hash[class_name]
+    if c then
+        c(level, size)
+    else
+        wr("nil\n")
+        read_unknown_bytes(size, not_found_comment .. ": " .. class_name)
+    end
+end
+
 
 local function read_props(level, count)
     for i = 1, count do
@@ -260,26 +291,23 @@ local function read_props(level, count)
         tab(level)
         wf("[\"%s\"] = ", var_name)
 
+        local not_found_comment
         if ok then
-            if class_name:find("enum ") == 1 then
-                read_enum()
-            else
-                local c = hash[class_name]
-                if c then
-                    c(level, size)
-                else
-                    wr("nil\n")
-                    read_unknown_bytes(size, "no in hash: " .. class_name)
-                end
-            end
+            not_found_comment = "no in hash"
         else
-            local c = hash[class_name]
-            if c then
-                c(level, size)
-            else
-                wr("nil\n")
-                read_unknown_bytes(size, "no in names: " .. class_name)
-            end
+            not_found_comment = "no in names"
+        end
+
+        if class_name:find("enum ") == 1 then
+            read_enum()
+        elseif class_name:find("class bTSceneObjArray") == 1 then
+            read_array()
+        elseif class_name:find("class eTResourceProxy") == 1 then
+            read_string()
+        elseif class_name:find("class eCScriptProxy") == 1 then
+            read_script_proxy()
+        else
+            execute_func(class_name, level, size, "no in hash")
         end
 
         wf("%s -- <%s> %d/%d\n", i<count and "," or "", class_name, i, count)
@@ -289,7 +317,7 @@ end
 
 local function read_dynamic1(level)
     local c, v, sz = read_class(level)
-    local start = r:pos()
+    -- wrote "{..."
 
     if "class gCEmbeddedLayer" == c then
         tab(level+1)
@@ -304,70 +332,100 @@ local function read_dynamic1(level)
         local unk1 = r:uint32()
         io.stderr:write("-- eCScene val ??? " .. unk1 .. " ???\n")
         wf("-- ??? %d ???\n", unk1)
-        read_FOUR(level)
-        tab(level)
-        wr("-- eCScene\n")
+        read_FOUR(level+1)
+        --        tab(level)
+        --        wr("-- eCScene\n")
 
     elseif "class gCNavigation_PS" == c then
-        read_array(level)
+        read_array(level+1)
 
     elseif "class gCRoutine" == c then
-        read_array(level)
+        read_array(level+1)
 
-        --    elseif "dbgBD7025AF" == c then
-        --        hash["dbgBD7025AF"](level, sz)
+    elseif "0xBD7025AF" == c then
+        hash["0xBD7025AF"](level, sz)
 
     elseif "class gCItem_PS" == c then
-        tab(level)
-        wf("[\"%s\"] = {\n", get_name(r:uint32()))
+        tab(level+1)
+        wf("[\"%s\"] = ", get_name(r:uint32()))
         assert(0 == r:uint32())
-        read_unknown_bytes(sz - 4 - 4)
+        --        read_unknown_bytes(sz - 4 - 4)
+        wr(r:uint32())
+        --        tab(level+1)
+        wr("\n")
 
     else
         read_unknown_bytes(sz)
     end
+
+    tab(level)
+    wf("} -- <%s>, off 0x%08X \n", c, r:pos())
 end
 
 
-local function read_eCDynamicEntity(size, level)
-    local start = r:pos()
-
-    tab(level); wr("matrix1 = "); read_float(16); wr(",\n")
-    tab(level); wr("matrix2 = "); read_float(16); wr(",\n")
-    tab(level); wr("box1 = "); read_float(2); wr(",\n")
-    tab(level); wr("vector1 = "); read_float(3); wr(",\n")
-    tab(level); wr("float1 = "); read_float(); wr(",\n")
-    --    tab(level); wr("guid1 = "); read_guid(); wr(",\n")
-
-    read_unknown_bytes(start + size - r:pos(), "eCDynamicEntity")
-
-    -- class eCEntity
+local function read_eCEntity(level)
     local c, v, sz = read_class(level)
-    start = r:pos()
+    -- wrote "{..."
+
+    local start = r:pos()
+    level = level + 1
 
     tab(level); wr("guid2 = "); read_guid(); wr(",\n")
+--    read_unknown_bytes(16, "eCEntity")
     tab(level); wr("string1 = "); read_string(); wr(",\n")
     read_unknown_bytes(6, "eCEntity")
 
     local count = r:uint8()
     for i = 1, count do
         tab(level)
-        --        wf("[%d] = { -- d1 of %d\n", i, count)
+        wf("[%d] = { -- eCE d1 of %d\n", i, count)
+
         read_FOUR(level+1)
+
         tab(level)
-        wf("}%s -- d1 %d/%d\n", i<count and "," or "", i, count)
+        wf("}%s -- eCE d1 %d/%d\n", i<count and "," or "", i, count)
     end
 
     count = r:uint32()
     for i = 1, count do
         tab(level)
-        wf("[%d] = { -- d2 of %d\n", i, count)
+        wf("[%d] = { -- eCE d2 of %d\n", i, count)
+
         read_FOUR(level+1)
+
         tab(level)
-        wf("}%s -- d2 %d/%d\n", i<count and "," or "", i, count)
+        wf("}%s -- eCE d2 %d/%d\n", i<count and "," or "", i, count)
     end
 
-    read_unknown_bytes(start + sz - r:pos())
+    read_unknown_bytes(start + sz - r:pos(), "eCEntity")
+
+    level = level - 1
+    tab(level)
+    wr("} -- eCEntity\n")
+end
+
+
+
+local function read_eCDynamicEntity(size, level, class_name, version)
+    local start = r:pos()
+
+    tab(level)
+    wf("[\"%s\"] = { -- v%d, [%d], off 0x%08X\n", class_name, version, size, start)
+
+    level = level + 1
+    tab(level); wr("matrix1 = "); read_float(16); wr(",\n")
+    tab(level); wr("matrix2 = "); read_float(16); wr(",\n")
+    tab(level); wr("box1 = "); read_float(2); wr(",\n")
+    tab(level); wr("position = "); read_float(3); wr(", -- ???\n")
+    tab(level); wr("floats = "); read_float(5); wr(",\n")
+    tab(level); wr("guid1 = "); read_guid(); wr(",\n")
+    read_unknown_bytes(start + size - r:pos(), "eCDynamicEntity")
+
+    level = level - 1
+    tab(level)
+    wf("}, -- <%s>\n", class_name)
+
+    read_eCEntity(level)
 end
 
 
@@ -384,26 +442,37 @@ local function read_eCAnimation3Controller_PS(size, level)
 
     -- eCAnimation3Base_PS
     local c, v, sz = read_class()
+    read_unknown_bytes(sz)
+end
 
-    start = r:pos()
-    read_unknown_bytes(start + sz - r:pos())
+
+local function read_eCTemplateEntity(size, level)
+    tab(level)
+    wf("[\"class eCTemplateEntity\"] = { -- [%d], off 0x%08X\n", size, r:pos())
+
+    read_unknown_bytes(size)
+
+    tab(level)
+    wr("}, -- <class eCTemplateEntity>\n")
+
+    read_eCEntity(level, size)
 end
 
 
 local function read_dynamic2(level)
-    local pos = r:pos()
     local class_hash = r:uint32()
+    local class_name = get_name(class_hash)
     local version = r:uint16()
     local size = r:uint32()
 
-    tab(level)
-    wf("-- < %s > [%d] v%d, off 0x%08X\n", get_name(class_hash), size, version, pos)
-
     if class_hash == 0x36182D05 then
-        read_eCDynamicEntity(size, level)
+        read_eCDynamicEntity(size, level+1, class_name, version)
 
     elseif class_hash == 0xD256AADC then
-        read_eCAnimation3Controller_PS(size, level)
+        read_eCAnimation3Controller_PS(size, level+1)
+
+    elseif class_hash == 0x60DE515C then
+        read_eCTemplateEntity(size, level+1)
 
     else
         read_unknown_bytes(size)
@@ -416,6 +485,8 @@ read_GEC2 = function(level)
     local start = r:pos()
 
     local count = r:uint16()
+
+    level = level+1
 
     tab(level)
     wf("prop = { -- off 0x%08X, %d entries\n", start, count)
@@ -435,7 +506,7 @@ read_GEC2 = function(level)
     wf("data = { -- off 0x%08X, :%d:\n", pos, code)
 
     if code == 2 then
-        read_dynamic2(level+1)
+        read_dynamic2(level)
     elseif code == 1 then
         read_dynamic1(level+1)
     elseif code == 0 then
@@ -444,12 +515,17 @@ read_GEC2 = function(level)
         assert(false, "\n\ncode " .. code .. "\n\n")
     end
 
+    tab(level)
+    wf("} -- data <%s>\n", c)
+
+    level = level-1
+
     pos = r:pos()
     readed = pos - start
     left = start + sz - pos
 
     tab(level)
-    wf("} -- data <%s>, off 0x%08X, %d <- %d bytes\n", c, pos, readed, left)
+    wf("} -- <%s>, off 0x%08X, %d <- %d bytes\n", c, pos, readed, left)
 end
 
 
@@ -464,23 +540,47 @@ read_FOUR = function(level)
 end
 
 
-local function read_GAR5()
-    --r:idstring("GAR5")
-    --r:idstring("\x20\x00\x00\x00")
-    --r:str(36)
-    r:seek(44)
+local function read_GSG3()
+    r:idstring("GAR5")
+end
 
+
+local function read_GAR5()
+    r:idstring("GAR5")
+    r:idstring("\x20\x00\x00\x00")
+    r:seek(44)
     r:idstring("GAR5")
     r:idstring("\x20\x00\x00\x00")
 
-    local count = r:uint16()
-    for i = 1, count do
-        read_string(0)
-        wf(" = { -- %d/%d entries\n", i, count)
-        read_FOUR(1)
-        wf("}%s\n", i<count and "," or "")
+    if "GTP0" == r:str(4) then
+        r:hex32()
+        r:hex32()
+        read_FOUR(0)
+    else
+        r:seek(r:pos() - 4)
+        local count = r:uint16()
+        for i = 1, count do
+            read_string(0)
+            wf(" = { -- %d/%d entries\n", i, count)
+            read_FOUR(0)
+            wf("}%s\n", i<count and "," or "")
+        end
+        eol()
     end
-    eol()
+end
+
+
+local function show_unknown_hash()
+    local hash_sorted = {}
+    for k, v in pairs(hash_unknown) do
+        table.insert(hash_sorted, k)
+    end
+    table.sort(hash_sorted)
+    print("unknown hashes:")
+    for i = 1, #hash_sorted do
+        print(hash_sorted[i])
+    end
+    print()
 end
 
 
@@ -488,8 +588,11 @@ end
 
 r:open(arg[1], "rb")
 read_GAR5()
+--read_GTP0()
 r:close()
 
-if DBG then
+if not DBG then
     DBG:close()
 end
+
+show_unknown_hash()
