@@ -22,7 +22,7 @@
 <script src="teleport.js"></script>
 <script>
     var tileRes = 512;
-    terrainSize = 81920 * 10; // TODO: check it
+    var terrainSize = 8192; // TODO: check it
 
     var terrainCorners = 
         [[-(terrainSize * 0.5) - tileRes, -(terrainSize * 0.5) - tileRes],
@@ -45,14 +45,13 @@
 
     layer.setUrl('map_512/elex-{z}-{y}-{x}.webp')
 
-    var Teleport = new L.LayerGroup(), test = new L.LayerGroup();
+    var Teleport = new L.LayerGroup();
 
-    var layers = [ layer, Teleport, test ];
+    var layers = [ layer, Teleport ];
 
-    var icons = { "Teleport": Teleport, "test": test };
+    var icons = { "Teleport": Teleport };
 
-    L.marker([0, 0], {title: "Center"}).addTo(test);
-    add_markers()
+    add_teleport_markers()
 
     L.Icon.Default.prototype.options.iconSize = [12, 20];
     L.Icon.Default.prototype.options.iconAnchor = [6, 20];
