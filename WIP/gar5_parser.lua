@@ -5,7 +5,11 @@ local DBG = arg[2] or nil
 require("mod_binary_reader")
 local r = BinaryReader
 
-local NAMES = dofile("names.lua")
+local ok, NAMES = pcall(dofile, "names_i686.luac")
+if not ok then
+    NAMES = dofile("names_x64.luac")
+end
+
 
 --[[ header ]]---------------------------------------------
 
@@ -42,7 +46,7 @@ end
 local hash_unknown = {}
 
 local function get_name(id)
-    local n = NAMES[id] and NAMES[id][2]
+    local n = NAMES[id]
     if n then
         return n, true
     else
@@ -99,11 +103,12 @@ local function read_enum()
     wf("%d --[[%s]]", hash, get_name(val))
 end
 
-local function read_script_proxy()
+local function read_script_proxy(comment)
     local u = r:uint16()
     assert(1 == u, "\n\npos -> " .. r:pos()-2 .. ", var ~= 1 == " .. u)
     local sz = r:uint16()
     wr("\"" .. r:str(sz) .. "\"")
+    if comment then wf(" --[[%s]] ", comment) end
 end
 
 local function read_class(level)
@@ -118,13 +123,14 @@ local function read_class(level)
     return class, version, size
 end
 
-local function read_array(level)
-    wr("{\n")
+local function read_array(level, no_block, count)
+    if not no_block then wr("{\n") end
 
-    local count = r:uint32()
+    if not count then count = r:uint32() end
+    
     for i = 1, count do
         tab(level+1)
-        wf("[\"%d\"] = { -- of %d\n", i, count)
+        wf("[%d] = { -- of %d, off 0x%08X\n", i, count, r:pos())
 
         read_FOUR(level+2)
 
@@ -132,8 +138,7 @@ local function read_array(level)
         wf("}%s -- array %d/%d\n", i<count and "," or "", i, count)
     end
 
-    tab(level)
-    wr("}")
+    if not no_block then tab(level); wr("}") end
 end
 
 
@@ -177,7 +182,6 @@ local function read_unknown_bytes(size, comment)
         wr(size .. " bytes ")
     end
     wr("--]]\n")
---    tab(level)
 
     -- skip this data
     r:seek(start + size)
@@ -203,10 +207,6 @@ hash["class bCVector"]      = function() read_float(3) end
 hash["class bCFloatColor"]  = function() read_float(3) end
 hash["class bCRange1"]      = function() read_float(2) end
 
---hash["class eCScriptProxyScript"]       = function() read_script_proxy() end
---hash["class gCScriptProxyAIState"]      = function() read_script_proxy() end
---hash["class gCScriptProxyAIFunction"]   = function() read_script_proxy() end
-
 hash["class eCLocString"] = function()
     local hex = r:hex32(1)
     read_string()
@@ -215,26 +215,11 @@ end
 
 hash["class bCString"] = function() read_string() end
 hash["class gCEffectProxy"] = function() read_string() end
+hash["class gCStateGraphTransition"] = function() read_string() end
 
---hash["class eTResourceProxy<class eCMeshResource2>"] = function() read_string() end
---hash["class eTResourceProxy<class eCImageResource2>"] = function() read_string() end
---hash["class eTResourceProxy<class eCCollisionMeshResource2>"] = function() read_string() end
---hash["class eTResourceProxy<class eCMotionNetworkDefResource2>"] = function() read_string() end
-
-hash["class eCCollisionShapeList"] = function()
-    local count = r:uint32()
-    for i = 1, count do
-        wr("{\n")
-        read_FOUR(tab_level+1)
-        tab(tab_level-1)
-        wr("}")
-    end
-end
-
---hash["class bTSceneObjArray<class gCModifySkill>"] = function(level) read_array(level) end
---hash["class bTSceneObjArray<class gCSkillValue>"] = function(level) read_array(level) end
---hash["class bTSceneObjArray<class gCInteraction>"] = function(level) read_array(level) end
-
+hash["class eCCollisionShapeList"] = function(level) read_array(level) end
+hash["class bTSceneRefPropertyArray<class gCStateGraphEventFilter *>"] = function(level) read_array(level) end
+hash["class bTSceneRefPtrArray<class gCStateGraphState *>"] = function(level) read_array(level) end
 
 hash["0xBD7025AF"] = function(level, size)
     local start = r:pos()
@@ -243,8 +228,6 @@ hash["0xBD7025AF"] = function(level, size)
     local unk2 = r:float()
     local count = r:uint32()
     -- 10 bytes
---    tab(level)
---    wf("[\"%s\"] = { -- %d*8 + 2*3 floats\n", var_name, count)
     wf("%10.2f, -- %d*8 + 2*3 floats\n", unk2, count)
     for i = 1, count do
         for j = 1, 8 do
@@ -258,15 +241,16 @@ hash["0xBD7025AF"] = function(level, size)
         end
         wr("\n")
     end
---    tab(level)
---    wr("}\n")
 end
 
-hash["0x889E4D02"] = function(level, size)  -- ["Shapes"] = ...
-    wr(" --[[0x889E4D02]] ")
+-- ["Shapes"] ... ["class eCVegModShapeSphere"]
+hash["0x889E4D02"] = function(level, size)
     read_array(level)
 end
 
+--hash["0xF998E269"] = function(level, size)
+--    read_array(level)
+--end
 
 
 --[[ func ]]-------------------------------------------------------------------
@@ -300,12 +284,20 @@ local function read_props(level, count)
 
         if class_name:find("enum ") == 1 then
             read_enum()
-        elseif class_name:find("class bTSceneObjArray") == 1 then
-            read_array()
+        elseif class_name:find("class bTSceneObjArray") == 1
+            or class_name:find("class bTObjArray") == 1 then
+            read_array(level)
         elseif class_name:find("class eTResourceProxy") == 1 then
             read_string()
         elseif class_name:find("class eCScriptProxy") == 1 then
             read_script_proxy()
+        elseif class_name:find("class gCScriptProxy") == 1 then
+            read_script_proxy()
+        elseif class_name:find("class gCLetterLocString") == 1 then
+            local hash = r:uint32()
+            read_string()
+            wf(" --[[hash 0x%08X]]", hash)
+            
         else
             execute_func(class_name, level, size, "no in hash")
         end
@@ -316,14 +308,21 @@ end
 
 
 local function read_dynamic1(level)
-    local c, v, sz = read_class(level)
-    -- wrote "{..."
+    local c = get_name(r:uint32())
+    local v = r:uint16()
+    local sz = r:uint32()
+    local pos = r:pos()
+
+    tab(level)
+    wr(("[\"%s\"] = { -- c v%d, [%d], off 0x%08X\n"):format(c, v, sz, pos))
 
     if "class gCEmbeddedLayer" == c then
         tab(level+1)
         wf("[\"%s\"] = {\n", get_name(r:uint32()))
         assert(0 == r:uint32())
+        
         read_FOUR(level+2)
+        
         tab(level+1)
         wr("} -- gCEmbeddedLayer\n")
 
@@ -333,29 +332,69 @@ local function read_dynamic1(level)
         io.stderr:write("-- eCScene val ??? " .. unk1 .. " ???\n")
         wf("-- ??? %d ???\n", unk1)
         read_FOUR(level+1)
-        --        tab(level)
-        --        wr("-- eCScene\n")
 
     elseif "class gCNavigation_PS" == c then
-        read_array(level+1)
+        read_array(level, true)
 
     elseif "class gCRoutine" == c then
-        read_array(level+1)
+        read_array(level, true)
 
     elseif "0xBD7025AF" == c then
-        hash["0xBD7025AF"](level, sz)
+        hash[c]()
 
     elseif "class gCItem_PS" == c then
         tab(level+1)
         wf("[\"%s\"] = ", get_name(r:uint32()))
         assert(0 == r:uint32())
-        --        read_unknown_bytes(sz - 4 - 4)
         wr(r:uint32())
-        --        tab(level+1)
         wr("\n")
+        
+    elseif "class gCInventory_PS" == c then
+--        local unk1 = r:uint32()
+--        local count = r:uint16()
+--        local unk2 = r:uint16()
+--        print("gCInventory_PS", unk1, count, unk2)
+--        if unk > 0 then
+--            read_array(level, true, count)
+--        end
+        read_array(level, true)
+        local count = r:uint16()
+        local unk1 = r:uint8()
+        local unk2 = r:uint8()
+--print("gCInventory_PS", count, unk1, unk2)
+        if unk2 > 0 then
+            read_array(level, true, count)
+        end
+--        read_unknown_bytes(4)
+--        assert(0 == r:uint32())
 
+    elseif "class gCParty_PS" == c then
+--        read_unknown_bytes(6)
+        wr("--[[\n")
+        wr("string1 = "); read_string(); eol()
+        wr("int1 = " .. r:uint32() .. "\n")
+        wr("guid1 = "); read_guid(); eol()
+        wr("--]]\n")
+    
+    elseif "class eCPrefabMesh" == c then
+        tab(level+1)
+        read_float(16)
+        eol()
+        
+    elseif "class gCStateGraphState" == c then
+        read_unknown_bytes(16)
+        wr("arr1 = {\n")
+        read_array(level, true)
+        wr("},\narr2 = {\n")
+        read_array(level, true) -- TODO: check this
+        wr("}\n")
+        
+    elseif "class gCStateGraphTransition" == c then
+        read_string()
+        eol()
+        
     else
-        read_unknown_bytes(sz)
+        read_unknown_bytes(sz, "unknown < " .. c .. " >")
     end
 
     tab(level)
@@ -371,23 +410,28 @@ local function read_eCEntity(level)
     level = level + 1
 
     tab(level); wr("guid2 = "); read_guid(); wr(",\n")
---    read_unknown_bytes(16, "eCEntity")
     tab(level); wr("string1 = "); read_string(); wr(",\n")
     read_unknown_bytes(6, "eCEntity")
 
     local count = r:uint8()
     for i = 1, count do
         tab(level)
-        wf("[%d] = { -- eCE d1 of %d\n", i, count)
+        wr("-- //eCEntity1\n")
+        tab(level)
+        wf("[%d] = { -- eCE d1 of %d, off 0x%08X\n", i, count, r:pos())
 
         read_FOUR(level+1)
 
         tab(level)
-        wf("}%s -- eCE d1 %d/%d\n", i<count and "," or "", i, count)
+        wf("}, -- eCE d1 %d/%d\n", i, count)
+        tab(level)
+        wr("-- \\\\eCEntity1\n")
     end
 
     count = r:uint32()
     for i = 1, count do
+        tab(level)
+        wr("eCEntity2 = {\n")
         tab(level)
         wf("[%d] = { -- eCE d2 of %d\n", i, count)
 
@@ -395,9 +439,12 @@ local function read_eCEntity(level)
 
         tab(level)
         wf("}%s -- eCE d2 %d/%d\n", i<count and "," or "", i, count)
+        
+        tab(level)
+        wr("}, -- eCEntity2\n")
     end
 
-    read_unknown_bytes(start + sz - r:pos(), "eCEntity")
+    read_unknown_bytes(start + sz - r:pos(), "eCEntity left")
 
     level = level - 1
     tab(level)
@@ -438,11 +485,15 @@ local function read_eCAnimation3Controller_PS(size, level)
     tab(level); wr("string3 = "); read_string(); wr(",\n")
     read_unknown_bytes(4)
     tab(level); wr("string4 = "); read_string(); wr(",\n")
+    read_unknown_bytes(6)
+    tab(level); wr("string5 = "); read_string(); wr(",\n")
     read_unknown_bytes(start + size - r:pos())
 
     -- eCAnimation3Base_PS
     local c, v, sz = read_class()
     read_unknown_bytes(sz)
+    tab(level)
+    wr("}\n")
 end
 
 
@@ -526,6 +577,8 @@ read_GEC2 = function(level)
 
     tab(level)
     wf("} -- <%s>, off 0x%08X, %d <- %d bytes\n", c, pos, readed, left)
+    
+    assert(0 == left, "\n\n\n\n")
 end
 
 
@@ -553,9 +606,11 @@ local function read_GAR5()
     r:idstring("\x20\x00\x00\x00")
 
     if "GTP0" == r:str(4) then
-        r:hex32()
-        r:hex32()
+        wr("template = {\n")
+        read_unknown_bytes(8)
         read_FOUR(0)
+        wr("}\n")
+        eol()
     else
         r:seek(r:pos() - 4)
         local count = r:uint16()
@@ -575,12 +630,14 @@ local function show_unknown_hash()
     for k, v in pairs(hash_unknown) do
         table.insert(hash_sorted, k)
     end
-    table.sort(hash_sorted)
-    print("unknown hashes:")
-    for i = 1, #hash_sorted do
-        print(hash_sorted[i])
+    if #hash_sorted > 0 then
+        table.sort(hash_sorted)
+        print("unknown hashes:")
+        for i = 1, #hash_sorted do
+            print(hash_sorted[i])
+        end
+        print()
     end
-    print()
 end
 
 
