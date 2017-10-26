@@ -127,7 +127,7 @@ local function read_array(level, no_block, count)
     if not no_block then wr("{\n") end
 
     if not count then count = r:uint32() end
-    
+
     for i = 1, count do
         tab(level+1)
         wf("[%d] = { -- of %d, off 0x%08X\n", i, count, r:pos())
@@ -285,7 +285,7 @@ local function read_props(level, count)
         if class_name:find("enum ") == 1 then
             read_enum()
         elseif class_name:find("class bTSceneObjArray") == 1
-            or class_name:find("class bTObjArray") == 1 then
+        or class_name:find("class bTObjArray") == 1 then
             read_array(level)
         elseif class_name:find("class eTResourceProxy") == 1 then
             read_string()
@@ -297,7 +297,7 @@ local function read_props(level, count)
             local hash = r:uint32()
             read_string()
             wf(" --[[hash 0x%08X]]", hash)
-            
+
         else
             execute_func(class_name, level, size, "no in hash")
         end
@@ -320,9 +320,9 @@ local function read_dynamic1(level)
         tab(level+1)
         wf("[\"%s\"] = {\n", get_name(r:uint32()))
         assert(0 == r:uint32())
-        
+
         read_FOUR(level+2)
-        
+
         tab(level+1)
         wr("} -- gCEmbeddedLayer\n")
 
@@ -348,7 +348,7 @@ local function read_dynamic1(level)
         assert(0 == r:uint32())
         wr(r:uint32())
         wr("\n")
-        
+
     elseif "class gCInventory_PS" == c then
 --        local unk1 = r:uint32()
 --        local count = r:uint16()
@@ -375,12 +375,12 @@ local function read_dynamic1(level)
         wr("int1 = " .. r:uint32() .. "\n")
         wr("guid1 = "); read_guid(); eol()
         wr("--]]\n")
-    
+
     elseif "class eCPrefabMesh" == c then
         tab(level+1)
         read_float(16)
         eol()
-        
+
     elseif "class gCStateGraphState" == c then
         read_unknown_bytes(16)
         wr("arr1 = {\n")
@@ -388,11 +388,11 @@ local function read_dynamic1(level)
         wr("},\narr2 = {\n")
         read_array(level, true) -- TODO: check this
         wr("}\n")
-        
+
     elseif "class gCStateGraphTransition" == c then
         read_string()
         eol()
-        
+
     else
         read_unknown_bytes(sz, "unknown < " .. c .. " >")
     end
@@ -413,10 +413,10 @@ local function read_eCEntity(level)
     tab(level); wr("string1 = "); read_string(); wr(",\n")
     read_unknown_bytes(6, "eCEntity")
 
+
+    tab(level); wr("eCEntity1 = {\n")
     local count = r:uint8()
     for i = 1, count do
-        tab(level)
-        wr("-- //eCEntity1\n")
         tab(level)
         wf("[%d] = { -- eCE d1 of %d, off 0x%08X\n", i, count, r:pos())
 
@@ -424,14 +424,11 @@ local function read_eCEntity(level)
 
         tab(level)
         wf("}, -- eCE d1 %d/%d\n", i, count)
-        tab(level)
-        wr("-- \\\\eCEntity1\n")
     end
-
+    tab(level); wr("}, --eCEntity1\n")
+    tab(level); wr("eCEntity2 = {\n")
     count = r:uint32()
     for i = 1, count do
-        tab(level)
-        wr("eCEntity2 = {\n")
         tab(level)
         wf("[%d] = { -- eCE d2 of %d\n", i, count)
 
@@ -439,11 +436,12 @@ local function read_eCEntity(level)
 
         tab(level)
         wf("}%s -- eCE d2 %d/%d\n", i<count and "," or "", i, count)
-        
-        tab(level)
-        wr("}, -- eCEntity2\n")
-    end
 
+--        tab(level)
+--        wr("}, -- eCEntity2\n")
+    end
+    tab(level); wr("} --eCEntity2\n")
+    
     read_unknown_bytes(start + sz - r:pos(), "eCEntity left")
 
     level = level - 1
@@ -577,7 +575,7 @@ read_GEC2 = function(level)
 
     tab(level)
     wf("} -- <%s>, off 0x%08X, %d <- %d bytes\n", c, pos, readed, left)
-    
+
     assert(0 == left, "\n\n\n\n")
 end
 
