@@ -52,7 +52,7 @@ Now the received tiles can be used, for example, [in a Leafjet-based map](https:
 First, you need to generate a hash table of all the strings in the file (*...\ELEX\system\ELEX.exe*). Using *nix-utilities do this is very simple:
 
 ````
-strings -3 ELEX.exe | grep "^[A-Za-z][A-Za-z <>_\-]\+$" | LANG=C sort | uniq > strings.txt
+strings -3 ELEX.exe | grep "^[A-Za-z][0-9a-zA-Z _<>-]\+$" | LANG=C sort | uniq > strings.txt
 ````
 
 After that it is required to generate a hash table for further use:
