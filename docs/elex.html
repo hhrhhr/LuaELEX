@@ -20,6 +20,7 @@
 <div id="mapid"></div>
 
 <script src="teleport.js"></script>
+<script src="items.js"></script>
 <script>
     var tileRes = 512;
     var terrainSize = 8192; // TODO: check it
@@ -42,28 +43,53 @@
         noWrap: true,
         continuousWorld: true,
     });
-
     layer.setUrl('map_512/elex-{z}-{y}-{x}.webp')
 
-    var Teleport = new L.LayerGroup();
+    var Teleport = new L.LayerGroup(),
+        Audio = new L.LayerGroup(),
+        Picture = new L.LayerGroup(),
+        Recipe = new L.LayerGroup(),
+        Socket = new L.LayerGroup(),
+        Book = new L.LayerGroup();
+        Letter = new L.LayerGroup();
 
-    var layers = [ layer, Teleport ];
+    var l = [ layer, Teleport, Audio, Picture, Recipe, Socket, Book, Letter ];
 
-    var icons = { "Teleport": Teleport };
+    var icons = {
+        "<img src='images/teleport.png' />Teleport": Teleport,
+        "<img src='images/audio.png' />Audio": Audio,
+        "<img src='images/picture.png' />Picture": Picture,
+        "<img src='images/recipe.png' />Recipe": Recipe,
+        "<img src='images/socket.png' />Socket": Socket,
+        "<img src='images/book.png' />Book": Book,
+        "<img src='images/letter.png' />Letter": Letter
+};
 
-    add_teleport_markers()
+    var LeafIcon = L.Icon.extend({
+        options: {
+            iconSize:     [16, 16],
+            iconAnchor:   [8, 16],
+            popupAnchor:  [0, 0]
+    }});
 
-    L.Icon.Default.prototype.options.iconSize = [12, 20];
-    L.Icon.Default.prototype.options.iconAnchor = [6, 20];
-    L.Icon.Default.prototype.options.shadowSize = [20, 20];
+    var teleport = new LeafIcon({iconUrl: 'images/teleport.png'});
+    var audio = new LeafIcon({iconUrl: 'images/audio.png'});
+    var picture = new LeafIcon({iconUrl: 'images/picture.png'});
+    var recipe = new LeafIcon({iconUrl: 'images/recipe.png'});
+    var socket = new LeafIcon({iconUrl: 'images/socket.png'});
+    var book = new LeafIcon({iconUrl: 'images/book.png'});
+    var letter = new LeafIcon({iconUrl: 'images/letter.png'});
+
+    add_teleport_markers();
+    add_markers();
 
     var mymap = L.map('mapid', {
         crs: L.CRS.Map,
         center: [0, 0],
         zoom: 1,
         minZoom: 0,
-        maxZoom: 4,
-        layers: layers,
+        maxZoom: 7,
+        layers: l,
         maxBounds: terrainCorners,
         attributionControl: false,
         //zoomSnap: 0.5,

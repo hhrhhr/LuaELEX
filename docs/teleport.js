@@ -1,4 +1,4 @@
-var arr = [
+var arr_teleport = [
 [ -196259.625, 40234.38671875, 31708.568359375, "MapMarker_Location_TAV_Fort", "MT_Teleporter_TAV_Fort" ],
 [ -155198.21875, 29806.705078125, 29256.07421875, "MapMarker_Location_TAV_DomeRuins", "MT_Teleporter_TAV_DomeRuins" ],
 [ -228052.921875, 10861.32421875, 28500.705078125, "MapMarker_Location_TAV_WindPark", "MT_Teleporter_TAV_WindPark" ],
@@ -43,11 +43,11 @@ var arr = [
 [ -103128.5546875, -200294.734375, 37746.50390625, "MapMarker_Location_ABE_SmallFarm", "MT_Teleporter_ABE_SmallFarm" ],
 [ -246943.03125, -16894.05859375, 18991.9140625, "MapMarker_Location_TAV_OUTIsland", "MT_Teleporter_TAV_OUTIsland" ],
 ];
-var arr_len = 43;
+var arr_teleport_len = 43;
 
 function add_teleport_markers() {
-    for (var i = 0; i < arr_len; i++) {
-        var m = arr[i];
-        L.marker( [ m[0]*0.01, m[1]*0.01 ], { title: m[3] } ).addTo(Teleport);
+    for (var i = 0; i < arr_teleport_len; i++) {
+        var m = arr_teleport[i];
+        L.marker( [ m[0]*0.01, m[1]*0.01 ], { title: m[3], icon: teleport } ).addTo(Teleport);
     };    
 };
