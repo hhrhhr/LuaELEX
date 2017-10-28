@@ -50,6 +50,7 @@ for i = 1, #arg-1 do
 --        or id:find("It_GrenadeLaucher_") == 1
         or id:find("It_Pic_") == 1
         or id:find("It_Recipe_") == 1
+        or id:find("It_Ri_") == 1
         or id:find("It_SocketItem_") == 1
         or id:find("It_Wri_") == 1
 --        if id:find("It_1h_") == 1
