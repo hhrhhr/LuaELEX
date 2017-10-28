@@ -7,21 +7,33 @@ local LANG = tonumber(arg[3]) or nil
 require("mod_binary_reader")
 local r = BinaryReader
 
+local out = assert(io.open(arg[2], "w+b"))
+
 --[[ utils ]]------------------------------------------------------------------
 
 local wr = io.write
+local tochar = string.char
+local tobyte = string.byte
 
 local wf = function(fmt, ...)
     wr(string.format(fmt, ...))
 end
 
-local out = assert(io.open(arg[2], "w+b"))
-
 local owr = function(s) out:write(s) end
 
-local function to_utf16(s)
-    local out, pos = string.gsub(s, "(.)", "%1\x00")
-    return out
+local function utf16_to_utf8(u16)
+    local u8 = {}
+    if u16 < 127 then
+        u8[1] = tochar(u16 & 255)
+    elseif u16 <= 2047 then
+        u8[1] = tochar(u16 >> 6 & 31 | 192)
+        u8[2] = tochar(u16 & 63 | 128)
+    else
+        u8[1] = tochar(u16 >> 12 & 15 | 224)
+        u8[2] = tochar(u16 >> 6 & 63 | 128)
+        u8[3] = tochar(u16 & 63 | 128)
+    end
+    return table.concat(u8)
 end
 
 local function convert_time(time)
@@ -34,16 +46,17 @@ end
 
 local function read_header()
     local header = {}
+
     header.s_num = r:uint32()    -- кол-во имён файлов
     local unk = r:uint32()
-    assert(0 == unk, "\n\nexpected 0x00000000, received " .. unk .. "\n\n")
+    assert(0 == unk, "\n\nexpected 0, received " .. unk .. "\n\n")
     header.c_num = r:uint32()    -- кол-во колонок (/2 - языков)
     header.r_num = r:uint32()    -- кол-во строк (хешей)
     header.s_arr = r:uint32()    -- адрес массива имен файлов
     header.n_arr = r:uint32()    -- адрес массива заголовков (первая строка таблицы)
     header.c_arr = r:uint32()    -- адрес колонок...
     header.r_arr = r:uint32()    -- адрес строк...
-
+--[[
     wr("s_num\tc_num\tc_num\ts_arr\tn_arr\tc_arr\t\tr_arr\n")
     wr(header.s_num .. "\t")
     wr(header.c_num .. "\t")
@@ -52,7 +65,7 @@ local function read_header()
     wr(header.n_arr .. "\t")
     wr(header.c_arr .. "\t")
     wr(header.r_arr .. "\n")
-
+--]]
     return header
 end
 
@@ -84,7 +97,7 @@ local function read_hash(offset, count)
         hash[i] = r:uint32()
     end
 
-    wr("hash readed: " .. count .. "\n")
+    wr("hashes (rows): " .. count .. "\n")
     return hash
 end
 
@@ -99,39 +112,44 @@ local function read_lang(offset, count)
 
     local lang = { [count-1] = true }
     for i = 0, count-1 do
-        local sz = tmp[r:pos()]-1
+        local sz = tmp[r:pos()]-1   -- skip \x00 at end
         local name = r:str(sz)
         r:uint8()
         lang[i] = name
     end
     tmp = nil
 
-    wr("lang readed: " .. count .. "\n")
+    wr("languages: " .. count .. "\n")
     return lang
 end
 
-local function read_lang_ptr(offset, count)
+local function read_lang_ptr(offset, count, rows)
     r:seek(offset)
     local lang_ptr = { [count-1] = true }
     for i = 0, count-1 do
-        -- strings (size, offset), symbols (size, offset)
-        lang_ptr[i] = { [0] = r:uint32(), r:uint32(), r:uint32(), r:uint32() }
+        lang_ptr[i] = {
+            [0] = r:uint32() - (rows * 4) -1,   -- control size
+            [1] = r:uint32(),                   -- control offset
+            [2] = r:uint32() // 4 -1,           -- char syze
+            [3] = r:uint32()                    -- char offset
+        }
     end
     assert(r:pos() == r:size()) -- must be EOF
 
     return lang_ptr
 end
 
-local function read_column(ptr, count)
-    local beg_sz = count - 1
-    local seq_sz = ptr[0] - (count * 4) - 1 -- strings size
-    local sym_sz = ptr[2] // 4 - 1          -- symbol size
+local function read_column(ctr, rows)
+    local beg_sz = rows -1
+    local seq_sz = ctr[0]   -- control size
+    local sym_sz = ctr[2]   -- char size
 
     local begin = { [beg_sz] = true }
     local seq = { [seq_sz] = true }
-    local symbol = { [sym_sz] = true }
+    local ptr = { [sym_sz] = true }
+    local char = { [sym_sz] = true }
 
-    r:seek(ptr[1]) -- string offset
+    r:seek(ctr[1]) -- control offset
     for i = 0, beg_sz do
         begin[i] = r:uint32()
     end
@@ -139,33 +157,34 @@ local function read_column(ptr, count)
         seq[i] = r:uint16()
     end
 
-    r:seek(ptr[3]) -- symbol offset)
+    r:seek(ctr[3]) -- char offset)
     for i = 0, sym_sz do
-        symbol[i] = { nxt = r:uint16(), char = r:str(2) }
+        ptr[i] = r:uint16()
+        char[i] = utf16_to_utf8(r:uint16())
     end
 
-    return { begin = begin, seq = seq, symbol = symbol }
+    return { begin = begin, seq = seq, ptr = ptr, char = char }
 end
 
 local function read_row(lang, row)
-    local i = lang.begin[row]
-    if 0xffffffff == i then return "" end
+    local idx = lang.begin[row]
+    if 0xffffffff == idx then return "" end
 
     local str = {}
     local seq = lang.seq
-    while true do
-        local s = seq[i]
-        if s == 0 then break end
-        
-        local sub = {}
-        local ls = lang.symbol
-        while true do
-            table.insert(sub, 1, ls[s].char)
-            s = ls[s].nxt
-            if s == 0 then break end
+    local ptr = lang.ptr
+    local char = lang.char
+
+    local s = seq[idx]
+    while s ~= 0 do
+        local add = {}
+        while s ~= 0 do
+            table.insert(add, 1, char[s])
+            s = ptr[s]
         end
-        table.insert(str, table.concat(sub))
-        i = i + 1
+        table.insert(str, table.concat(add))
+        idx = idx + 1
+        s = seq[idx]
     end
 
     return table.concat(str)
@@ -179,25 +198,20 @@ local function read_STB(ver)
     local source = read_source(h.s_arr, h.s_num)
     local hash = read_hash(h.r_arr, h.r_num)
     local lang = read_lang(h.n_arr, h.c_num)
-    local lang_ptr = read_lang_ptr(h.c_arr, h.c_num)
-    wr("headers done, start data reading...\n")
+    local lang_ptr = read_lang_ptr(h.c_arr, h.c_num, h.r_num)
+    wr("header done, start data reading...\n")
 
     local tbl = { [h.c_num-1] = true }
     tbl[LANG] = read_column(lang_ptr[LANG], h.r_num)
     wr("data done, start output...\n")
-    
-    owr("\xFF\xFE")
-    owr(to_utf16("L = {}\r\n"))
-    owr(to_utf16("L.lang = \"" .. lang[LANG] .. "\"\r\n"))
 
+    owr(("local L = {}\r\nL.lang = \"%s\"\r\n"):format(lang[LANG]))
     for r = 0, h.r_num-1 do
         local str = read_row(tbl[LANG], r)
-        
-        owr(to_utf16(("L[0x%08X] = [["):format(hash[r])))
-        owr(str)
-        owr(to_utf16("]]\r\n"))
+        owr(("L[0x%08X] = [[%s]]\r\n"):format(hash[r], str))
     end
-    owr(to_utf16("return L\r\n"))
+    owr("return L\r\n")
+    wr("all done!\n")
 end
 
 
@@ -220,4 +234,4 @@ r:open(arg[1], "rb")
 read_GAR5()
 r:close()
 
-if out then out:close() end
+out:close()
