@@ -74,6 +74,15 @@ lua gar5_parser.lua World_Teleporter.sec > World_Teleporter.txt
 Show the list of files in the archive or unpack them all:
 
 ````
-lua pXX_unpack.lua path_to.p00
-lua pXX_unpack.lua path_to.p00 output_dir
+lua pXX_unpack.lua <path_to.p00> [output_dir]
 ````
+
+# Localization
+
+Convert ````\localization\w_strings.bin```` to Lua table:
+
+````
+lua w_strings.lua <w_strings.bin> <output.lua> [lang]
+````
+
+*lang* — language code, 0...15 (in patch 1.1)
