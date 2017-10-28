@@ -61,6 +61,8 @@ After that it is required to generate a hash table for further use:
 lua generate_hash.lua strings.txt > hash_names.lua
 ````
 
+*also you can use precompiled names_%PLAT%.luac from repo*
+
 Beforehand, you need to unpack some .rom file, for example, to find the coordinates of teleports you need ````...\0_na_sec\0\9\w_sec_0_na_935f1e52.rom````. The correspondence of the hexadecimal code of the file name can be found in ````...\0_na_sec\w_sec_0_na.csv````, in this case, the name of the file is ````World_Teleporter.sec````.
 
 Now everything is ready to run a fairly universal *gar5_parser.lua*:
