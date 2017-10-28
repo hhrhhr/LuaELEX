@@ -23,7 +23,7 @@
 <script src="items.js"></script>
 <script>
     var tileRes = 512;
-    var terrainSize = 8192; // TODO: check it
+    var terrainSize = 8192;
 
     var terrainCorners = 
         [[-(terrainSize * 0.5) - tileRes, -(terrainSize * 0.5) - tileRes],
@@ -46,6 +46,7 @@
     layer.setUrl('map_512/elex-{z}-{y}-{x}.webp')
 
     var Teleport = new L.LayerGroup(),
+        Amulet = new L.LayerGroup(),
         Audio = new L.LayerGroup(),
         Picture = new L.LayerGroup(),
         Recipe = new L.LayerGroup(),
@@ -53,10 +54,11 @@
         Book = new L.LayerGroup();
         Letter = new L.LayerGroup();
 
-    var l = [ layer, Teleport, Audio, Picture, Recipe, Socket, Book, Letter ];
+    var l = [ layer, Teleport, Amulet, Audio, Picture, Recipe, Socket, Book, Letter ];
 
     var icons = {
         "<img src='images/teleport.png' />Teleport": Teleport,
+        "<img src='images/ring.png' />Amulet": Amulet,
         "<img src='images/audio.png' />Audio": Audio,
         "<img src='images/picture.png' />Picture": Picture,
         "<img src='images/recipe.png' />Recipe": Recipe,
@@ -68,11 +70,12 @@
     var LeafIcon = L.Icon.extend({
         options: {
             iconSize:     [16, 16],
-            iconAnchor:   [8, 16],
+            iconAnchor:   [8, 8],
             popupAnchor:  [0, 0]
     }});
 
     var teleport = new LeafIcon({iconUrl: 'images/teleport.png'});
+    var amulet = new LeafIcon({iconUrl: 'images/ring.png'});
     var audio = new LeafIcon({iconUrl: 'images/audio.png'});
     var picture = new LeafIcon({iconUrl: 'images/picture.png'});
     var recipe = new LeafIcon({iconUrl: 'images/recipe.png'});
