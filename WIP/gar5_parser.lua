@@ -23,7 +23,7 @@ local wr
 if DBG then
     wr = io.write
 else
-    DBG = assert(io.open(arg[1] .. ".lua", "w+"))
+    DBG = assert(io.open(arg[1] .. ".lua", "w+b"))
     wr = function(s) DBG:write(s) end
 end
 
@@ -80,10 +80,15 @@ local function read_guid()
     wr(table.concat(t))
 end
 
-local function read_time()
-    local t = r:uint64()
+local function read_time(time)
+    local t = time or (r:uint32() << 32) | r:uint32()
     local u = math.floor(t / 10000000 - 11644473600)
-    wr(os.date("%Y-%m-%d %H:%M:%S", u))
+    local str = os.date("%Y-%m-%d %H:%M:%S", u)
+    if time then
+        return str
+    else
+        wr(str)
+    end
 end
 
 local function read_float(n)
@@ -140,6 +145,20 @@ local function read_array(level, no_block, count)
 
     if not no_block then tab(level); wr("}") end
 end
+
+local function read_arr_string(level)
+    local count = r:uint32()
+    wf("{ -- %d entries\n", count)
+    for i = 1, count do
+        tab(level+1)
+        wf("[%d] = ", i)
+        read_string()
+        wf("%s -- %d/%d\n", i<count and "," or "", i, count)
+    end
+    tab(level)
+    wr("}")
+end
+
 
 
 local function read_unknown_bytes(size, comment)
@@ -216,6 +235,7 @@ end
 hash["class bCString"] = function() read_string() end
 hash["class gCEffectProxy"] = function() read_string() end
 hash["class gCStateGraphTransition"] = function() read_string() end
+hash["class eCVegetationDefinitionProxy"] = function() read_string() end
 
 hash["class eCCollisionShapeList"] = function(level) read_array(level) end
 hash["class bTSceneRefPropertyArray<class gCStateGraphEventFilter *>"] = function(level) read_array(level) end
@@ -244,9 +264,10 @@ hash["0xBD7025AF"] = function(level, size)
 end
 
 -- ["Shapes"] ... ["class eCVegModShapeSphere"]
-hash["0x889E4D02"] = function(level, size)
-    read_array(level)
-end
+hash["0x889E4D02"] = function(level, size) read_array(level) end
+
+-- ["Nodes"] in XXX_Spline.sec
+hash["0x6660C286"] = function(level, size) read_array(level) end
 
 --hash["0xF998E269"] = function(level, size)
 --    read_array(level)
@@ -284,6 +305,8 @@ local function read_props(level, count)
 
         if class_name:find("enum ") == 1 then
             read_enum()
+        elseif class_name:find("class bTObjArray<class bCString>") == 1 then
+            read_arr_string(level)
         elseif class_name:find("class bTSceneObjArray") == 1
         or class_name:find("class bTObjArray") == 1 then
             read_array(level)
@@ -410,6 +433,7 @@ local function read_eCEntity(level)
     level = level + 1
 
     tab(level); wr("guid2 = "); read_guid(); wr(",\n")
+--    read_unknown_bytes(16, "eCEntity")
     tab(level); wr("string1 = "); read_string(); wr(",\n")
     read_unknown_bytes(6, "eCEntity")
 
@@ -441,7 +465,7 @@ local function read_eCEntity(level)
 --        wr("}, -- eCEntity2\n")
     end
     tab(level); wr("} --eCEntity2\n")
-    
+
     read_unknown_bytes(start + sz - r:pos(), "eCEntity left")
 
     level = level - 1
@@ -599,26 +623,35 @@ end
 local function read_GAR5()
     r:idstring("GAR5")
     r:idstring("\x20\x00\x00\x00")
-    r:seek(44)
-    r:idstring("GAR5")
-    r:idstring("\x20\x00\x00\x00")
 
-    if "GTP0" == r:str(4) then
-        wr("template = {\n")
-        read_unknown_bytes(8)
-        read_FOUR(0)
-        wr("}\n")
-        eol()
+    if "STB" == r:str(3) then
+        local ver = r:uint8()
+        io.stderr:write("\nthe file looks like a localization resource (ver ")
+        io.stderr:write(ver)
+        io.stderr:write(").\ntry to use w_strings.lua\n")
+        
     else
-        r:seek(r:pos() - 4)
-        local count = r:uint16()
-        for i = 1, count do
-            read_string(0)
-            wf(" = { -- %d/%d entries\n", i, count)
+        r:seek(44)
+        r:idstring("GAR5")
+        r:idstring("\x20\x00\x00\x00")
+
+        if "GTP0" == r:str(4) then
+            wr("template = {\n")
+            read_unknown_bytes(8)
             read_FOUR(0)
-            wf("}%s\n", i<count and "," or "")
+            wr("}\n")
+            eol()
+        else
+            r:seek(r:pos() - 4)
+            local count = r:uint16()
+            for i = 1, count do
+                read_string(0)
+                wf(" = { -- %d/%d entries\n", i, count)
+                read_FOUR(0)
+                wf("}%s\n", i<count and "," or "")
+            end
+            eol()
         end
-        eol()
     end
 end
 
@@ -643,7 +676,6 @@ end
 
 r:open(arg[1], "rb")
 read_GAR5()
---read_GTP0()
 r:close()
 
 if not DBG then
