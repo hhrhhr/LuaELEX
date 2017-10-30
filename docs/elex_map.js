@@ -81,8 +81,8 @@ L.control.layers(baseMap, icons, {hideSingleBase: true}).addTo(mymap);
 L.control.scale({maxWidth: 400, updateWhenIdle: true}).addTo(mymap);
 
 var url1 = "<a href='elex_map_DE.html' title='Deutsch'>[DE]</a>"
-var url2 = "<a href='elex_map_EN.html' title='Deutsch'>[EN]</a>"
-var url3 = "<a href='elex_map_RU.html' title='Deutsch'>[RU]</a>"
+var url2 = "<a href='elex_map_EN.html' title='English'>[EN]</a>"
+var url3 = "<a href='elex_map_RU.html' title='Русский'>[RU]</a>"
 var url4 = "<a href='https://github.com/hhrhhr/LuaELEX' title='source on Github'>[map source]</a>" 
 L.control.attribution()
 .addAttribution(url1)
