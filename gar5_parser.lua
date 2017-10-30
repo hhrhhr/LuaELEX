@@ -104,8 +104,8 @@ local function read_float(n)
 end
 
 local function read_enum()
-    local val, hash = r:uint32(), r:uint32()
-    wf("%d --[[%s]]", hash, get_name(val))
+    local hash, val = r:uint32(), r:sint32()
+    wf("%d --[[%s]]", val, get_name(hash))
 end
 
 local function read_script_proxy(comment)
@@ -159,6 +159,31 @@ local function read_arr_string(level)
     wr("}")
 end
 
+local function read_arr_guid(level)
+    local count = r:uint32()
+    wf("{ -- %d entries\n", count)
+    for i = 1, count do
+        tab(level+1)
+        wf("[%d] = ", i)
+        read_guid()
+        wf("%s -- %d/%d\n", i<count and "," or "", i, count)
+    end
+    tab(level)
+    wr("}")
+end
+
+local function read_arr_float(level)
+    local count = r:uint32()
+    wf("{ -- %d entries\n", count)
+    for i = 1, count do
+        tab(level+1)
+        wf("[%d] = ", i)
+        read_float()
+        wf("%s -- %d/%d\n", i<count and "," or "", i, count)
+    end
+    tab(level)
+    wr("}")
+end
 
 
 local function read_unknown_bytes(size, comment)
@@ -177,7 +202,7 @@ local function read_unknown_bytes(size, comment)
         table.insert(str, string.char(b))
     end
 
-    wr("--[[ " .. (comment or "") .. "\n")
+    wr("--[[ SKIP " .. (comment or "") .. "\n")
     local i = 1
     while i < sz do
         local j = math.min(i+15, sz)
@@ -229,7 +254,7 @@ hash["class bCRange1"]      = function() read_float(2) end
 hash["class eCLocString"] = function()
     local hex = r:hex32(1)
     read_string()
-    wf(" --[[0x%s]]", hex)
+    wf(" --[[L(0x%s)]]", hex)
 end
 
 hash["class bCString"] = function() read_string() end
@@ -264,14 +289,13 @@ hash["0xBD7025AF"] = function(level, size)
 end
 
 -- ["Shapes"] ... ["class eCVegModShapeSphere"]
-hash["0x889E4D02"] = function(level, size) read_array(level) end
+hash["0x889E4D02"] = function(level, size, cn)
+    wf("--[[< %s >]] ", cn)
+    read_array(level)
+end
 
 -- ["Nodes"] in XXX_Spline.sec
 hash["0x6660C286"] = function(level, size) read_array(level) end
-
---hash["0xF998E269"] = function(level, size)
---    read_array(level)
---end
 
 
 --[[ func ]]-------------------------------------------------------------------
@@ -279,7 +303,7 @@ hash["0x6660C286"] = function(level, size) read_array(level) end
 local function execute_func(class_name, level, size, not_found_comment)
     local c = hash[class_name]
     if c then
-        c(level, size)
+        c(level, size, class_name)
     else
         wr("nil\n")
         read_unknown_bytes(size, not_found_comment .. ": " .. class_name)
@@ -294,35 +318,48 @@ local function read_props(level, count)
         local size = r:uint32()
 
         tab(level)
+--        wf("[\"%s\"] = --[[%s %d]] ", var_name, class_name, size)
         wf("[\"%s\"] = ", var_name)
 
         local not_found_comment
         if ok then
-            not_found_comment = "no in hash"
+            not_found_comment = "not implemented var (not in script)"
         else
-            not_found_comment = "no in names"
+            not_found_comment = "unknown hash (name)"
         end
 
         if class_name:find("enum ") == 1 then
             read_enum()
+        
         elseif class_name:find("class bTObjArray<class bCString>") == 1 then
             read_arr_string(level)
+        
+        elseif class_name:find("class bTSceneObjArray<class eCEntityProxy>") == 1
+            or class_name:find("class bTObjArray<class eCTemplateEntityProxy>") == 1 then
+            read_arr_guid(level)
+        
         elseif class_name:find("class bTSceneObjArray") == 1
-        or class_name:find("class bTObjArray") == 1 then
+            or class_name:find("class bTObjArray") == 1
+            or class_name:find("class bTSceneRefPtrArray") == 1 then
             read_array(level)
+        
         elseif class_name:find("class eTResourceProxy") == 1 then
             read_string()
-        elseif class_name:find("class eCScriptProxy") == 1 then
+        
+        elseif class_name:find("class eCScriptProxy") == 1
+            or class_name:find("class gCScriptProxy") == 1 then
             read_script_proxy()
-        elseif class_name:find("class gCScriptProxy") == 1 then
-            read_script_proxy()
+        
         elseif class_name:find("class gCLetterLocString") == 1 then
             local hash = r:uint32()
             read_string()
             wf(" --[[hash 0x%08X]]", hash)
+        
+        elseif class_name:find("class bTValArray<float>") == 1 then
+            read_arr_float(level)
 
         else
-            execute_func(class_name, level, size, "no in hash")
+            execute_func(class_name, level, size, "not implemented var executed")
         end
 
         wf("%s -- <%s> %d/%d\n", i<count and "," or "", class_name, i, count)
@@ -373,31 +410,18 @@ local function read_dynamic1(level)
         wr("\n")
 
     elseif "class gCInventory_PS" == c then
---        local unk1 = r:uint32()
---        local count = r:uint16()
---        local unk2 = r:uint16()
---        print("gCInventory_PS", unk1, count, unk2)
---        if unk > 0 then
---            read_array(level, true, count)
---        end
         read_array(level, true)
         local count = r:uint16()
-        local unk1 = r:uint8()
+        local unk1 = r:uint8(); assert(0 == unk1)
         local unk2 = r:uint8()
---print("gCInventory_PS", count, unk1, unk2)
         if unk2 > 0 then
             read_array(level, true, count)
         end
---        read_unknown_bytes(4)
---        assert(0 == r:uint32())
 
     elseif "class gCParty_PS" == c then
---        read_unknown_bytes(6)
-        wr("--[[\n")
-        wr("string1 = "); read_string(); eol()
-        wr("int1 = " .. r:uint32() .. "\n")
-        wr("guid1 = "); read_guid(); eol()
-        wr("--]]\n")
+        tab(level+1); wr("string1 = "); read_string(); wr(",\n")
+        tab(level+1); wr("int1 = " .. r:uint32() .. ",\n")
+        tab(level+1); wr("guid1 = "); read_guid(); wr("\n")
 
     elseif "class eCPrefabMesh" == c then
         tab(level+1)
@@ -548,7 +572,7 @@ local function read_dynamic2(level)
         read_eCTemplateEntity(size, level+1)
 
     else
-        read_unknown_bytes(size)
+        read_unknown_bytes(size, "unknown dynamic2 entry")
     end
 end
 
