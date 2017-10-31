@@ -45,32 +45,32 @@ for i = 1, #arg-2 do
         local pos = cD.position
         local id = cE.string1
 
-        if id:find("It_Am_") == 1
-        or id:find("It_Audiolog_") == 1
---        or id:find("It_Blaster_") == 1
---        or id:find("It_Bow_") == 1
---        or id:find("It_Crossbow_") == 1
---        or id:find("It_Flamethrower_") == 1
---        or id:find("It_GrenadeLaucher_") == 1
-        or id:find("It_Pic_") == 1
-        or id:find("It_Recipe_") == 1
-        or id:find("It_Ri_") == 1
-        or id:find("It_SocketItem_") == 1
-        or id:find("It_Wri_") == 1
---        if id:find("It_1h_") == 1
---        or id:find("It_2h_") == 1
-        then
-            table.insert(pos, "\""..id.."\"")
+        if id:find("It_") == 1 then
+            if id:find("Am_", 4) == 4
+            or id:find("Audiolog_", 4) == 4
+--            or id:find("It_Blaster_", 4) == 4
+--            or id:find("It_Bow_", 4) == 4
+--            or id:find("It_Crossbow_", 4) == 4
+--            or id:find("It_Flamethrower_", 4) == 4
+--            or id:find("It_GrenadeLaucher_", 4) == 4
+            or id:find("Pic_", 4) == 4
+            or id:find("Recipe", 4) == 4
+            or id:find("Ri_", 4) == 4
+            or id:find("SocketItem_", 4) == 4
+            or id:find("Wri_Book", 4) == 4
+            or id:find("Wri_Letter", 4) == 4
+--            or id:find("It_1h_", 4) == 4
+--            or id:find("It_2h_", 4) == 4
+            then
+                table.insert(pos, "\""..id.."\"")
 
-            local fo = hash(("FO_" .. id):lower())
-            local desc = hash(("ITEMDESC_" .. id):lower())
-            
---            table.insert(pos, string.format("%q", LANG[fo]))
-            table.insert(pos, ("0x%08X"):format(fo))
---            table.insert(pos, string.format("%q", LANG[desc]))
-            table.insert(pos, ("0x%08X"):format(desc))
+                local fo = hash(("FO_" .. id):lower())
+                local desc = hash(("ITEMDESC_" .. id):lower())
+                table.insert(pos, ("0x%08X"):format(fo))
+                table.insert(pos, ("0x%08X"):format(desc))
 
-            table.insert(items, pos)
+                table.insert(items, pos)
+            end
         end
     end
 end
@@ -85,6 +85,7 @@ used_lang = nil
 table.sort(lang, function(a, b) return a[1] < b[1] end)
 
 -- lang array
+OUT:write("var lang = [];\n")
 for i = 1, #lang do
     local l = lang[i]
     OUT:write(string.format("lang[0x%08X] = %q;\n", l[1], l[2]))
