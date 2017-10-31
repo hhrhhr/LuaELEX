@@ -27,7 +27,7 @@ var Teleport = new L.LayerGroup(),
     Picture = new L.LayerGroup(),
     Recipe = new L.LayerGroup(),
     Socket = new L.LayerGroup(),
-    Book = new L.LayerGroup();
+    Book = new L.LayerGroup(),
     Letter = new L.LayerGroup();
 
 var l = [ layer, Teleport, Amulet, Audio, Picture, Recipe, Socket, Book, Letter ];
