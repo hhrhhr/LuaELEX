@@ -91,6 +91,18 @@ local function read_time(time)
     end
 end
 
+local function read_matrix(level)
+    for i = 1, 4 do
+        eol()
+        tab(level)
+        for j = 1, 4 do
+            wf("%11.3f, ", r:float())
+        end
+    end
+--    tab(level)
+end
+
+
 local function read_float(n)
     if n then
         local t = { [n] = nil }
@@ -146,8 +158,8 @@ local function read_array(level, no_block, count)
     if not no_block then tab(level); wr("}") end
 end
 
-local function read_arr_string(level)
-    local count = r:uint32()
+local function read_arr_string(level, count)
+    count = count or r:uint32()
     wf("{ -- %d entries\n", count)
     for i = 1, count do
         tab(level+1)
@@ -250,6 +262,7 @@ hash["class bCMotion"]      = function() read_float(7) end
 hash["class bCVector"]      = function() read_float(3) end
 hash["class bCFloatColor"]  = function() read_float(3) end
 hash["class bCRange1"]      = function() read_float(2) end
+hash["class eCWeatherOverwrite"] = function(level) tab(level); read_float(3) end
 
 hash["class eCLocString"] = function()
     local hex = r:hex32(1)
@@ -330,36 +343,44 @@ local function read_props(level, count)
 
         if class_name:find("enum ") == 1 then
             read_enum()
-        
+
         elseif class_name:find("class bTObjArray<class bCString>") == 1 then
             read_arr_string(level)
-        
+
         elseif class_name:find("class bTSceneObjArray<class eCEntityProxy>") == 1
-            or class_name:find("class bTObjArray<class eCTemplateEntityProxy>") == 1 then
+        or class_name:find("class bTObjArray<class eCTemplateEntityProxy>") == 1 then
             read_arr_guid(level)
-        
+
         elseif class_name:find("class bTSceneObjArray") == 1
-            or class_name:find("class bTObjArray") == 1
-            or class_name:find("class bTSceneRefPtrArray") == 1 then
+        or class_name:find("class bTObjArray") == 1
+        or class_name:find("class bTSceneRefPtrArray") == 1 then
             read_array(level)
-        
+
         elseif class_name:find("class eTResourceProxy") == 1 then
             read_string()
-        
+
         elseif class_name:find("class eCScriptProxy") == 1
-            or class_name:find("class gCScriptProxy") == 1 then
+        or class_name:find("class gCScriptProxy") == 1 then
             read_script_proxy()
-        
+
         elseif class_name:find("class gCLetterLocString") == 1 then
             local hash = r:uint32()
             read_string()
             wf(" --[[hash 0x%08X]]", hash)
-        
+
         elseif class_name:find("class bTValArray<float>") == 1 then
             read_arr_float(level)
 
+        elseif class_name:find("class gCFlightPath") == 1
+        or class_name:find("class gCProjectile") == 1
+        or class_name:find("class eCWeatherZoneShape") == 1 then
+            wr("{\n")
+            read_FOUR(level+1)
+            tab(level)
+            wr("}")
+
         else
-            execute_func(class_name, level, size, "not implemented var executed")
+            execute_func(class_name, level, size, not_found_comment)
         end
 
         wf("%s -- <%s> %d/%d\n", i<count and "," or "", class_name, i, count)
@@ -399,8 +420,9 @@ local function read_dynamic1(level)
     elseif "class gCRoutine" == c then
         read_array(level, true)
 
-    elseif "0xBD7025AF" == c then
-        hash[c]()
+    elseif "0xBD7025AF" == c
+    or "class eCWeatherOverwrite" == c then
+        hash[c](level+1)
 
     elseif "class gCItem_PS" == c then
         tab(level+1)
@@ -506,11 +528,12 @@ local function read_eCDynamicEntity(size, level, class_name, version)
     wf("[\"%s\"] = { -- v%d, [%d], off 0x%08X\n", class_name, version, size, start)
 
     level = level + 1
-    tab(level); wr("matrix1 = "); read_float(16); wr(",\n")
-    tab(level); wr("matrix2 = "); read_float(16); wr(",\n")
-    tab(level); wr("box1 = "); read_float(2); wr(",\n")
-    tab(level); wr("position = "); read_float(3); wr(", -- ???\n")
-    tab(level); wr("floats = "); read_float(5); wr(",\n")
+    tab(level); wr("matrix1 = {"); read_matrix(level+1); wr("},\n")
+    tab(level); wr("matrix2 = {"); read_matrix(level+1); wr("},\n")
+    tab(level); wr("bb_min = "); read_float(3); wr(",\n")
+    tab(level); wr("bb_max = "); read_float(3); wr(",\n")
+    tab(level); wr("bb_mid = "); read_float(3); wr(",\n")
+    tab(level); wr("diameter = "); read_float(); wr(",\n")
     tab(level); wr("guid1 = "); read_guid(); wr(",\n")
     read_unknown_bytes(start + size - r:pos(), "eCDynamicEntity")
 
@@ -653,19 +676,26 @@ local function read_GAR5()
         io.stderr:write("\nthe file looks like a localization resource (ver ")
         io.stderr:write(ver)
         io.stderr:write(").\ntry to use w_strings.lua\n")
-        
+
     else
         r:seek(44)
         r:idstring("GAR5")
         r:idstring("\x20\x00\x00\x00")
 
-        if "GTP0" == r:str(4) then
+        local four = r:str(4)
+        if "GTP0" == four then      -- .tpl
             wr("template = {\n")
             read_unknown_bytes(8)
             read_FOUR(0)
             wr("}\n")
+        elseif "GEC2" == four then  -- .wrl
+            wr("wrl = {\n")
+            read_GEC2(0)
+            wr("}\nstrings = ")
+            local count = r:uint16()
+            read_arr_string(1, count)
             eol()
-        else
+        else                        -- .sec
             r:seek(r:pos() - 4)
             local count = r:uint16()
             for i = 1, count do
@@ -674,8 +704,8 @@ local function read_GAR5()
                 read_FOUR(0)
                 wf("}%s\n", i<count and "," or "")
             end
-            eol()
         end
+        eol()
     end
 end
 
