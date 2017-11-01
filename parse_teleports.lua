@@ -1,17 +1,19 @@
 assert("Lua 5.3" == _VERSION)
 assert(arg[1], "\n\n[ERROR] no input file\n\n")
-assert(arg[#arg-1], "\n\n[ERROR] no language file\n")
-assert(arg[#arg], "\n\n[ERROR] no output file\n")
+assert(arg[2], "\n\n[ERROR] no language file\n")
+assert(arg[3], "\n\n[ERROR] no output file\n")
 
-local LANG = dofile(arg[#arg-1])
-local OUT = assert(io.open(arg[#arg], "w+"))
+local LANG = dofile(arg[2])
+local OUT = assert(io.open(arg[3], "w+"))
+
+local COFF = 0.01
 
 --[[
 lua gar5_parser.lua World_Teleporter.sec
     -> World_Teleporter.sec.lua
     
 lua parse_teleports.lua World_Teleporter.sec.lua > teleport.js
-    -> for LeafJet
+    -> for Leaflet
 --]]
 
 local teleport = {}
@@ -41,7 +43,11 @@ for i = 1, #data do
 
     local l = cE.eCEntity1[3] and cE.eCEntity1[3]["class gCMapLocation_PS"].prop
 
-    local pos = cD.position
+    local pos = cD.bb_mid
+    table.remove(pos, 2)
+    pos[1] = pos[1] * COFF
+    pos[2] = pos[2] * COFF
+    
     local id = cE.string1
     local title = l and l["Title"] or "none"
     title = hash(title:lower())
@@ -68,20 +74,20 @@ for i = 1, #lang do
 end
 
 OUT:write("\nvar arr_teleport = [\n")
-
 for i = 1, #teleport do
     OUT:write("[ " .. table.concat(teleport[i], ", ") .. " ],\n")
 end
-
 OUT:write("];\n")
+
 OUT:write([=[
 
 function add_teleport_markers() {
-    for (var i = 0; i < arr_teleport.length; i++) {
-        var m = arr_teleport[i];
-        var pop = lang[m[4]] + "<br /><i>" + m[3] + "</i>";
-        L.marker( [ m[0]*0.01, m[1]*0.01 ], { title: lang[m[4]], icon: teleport } ).bindPopup(pop).addTo(Teleport);
-    };
+  for (var i = 0; i < arr_teleport.length; i++) {
+    var m = arr_teleport[i];
+    var pop = lang[m[3]] + "<br /><i>" + m[2] + "</i>";
+    L.marker( [ m[1], m[0] ], { title: lang[m[3]], icon: teleport } )
+    .bindPopup(pop).addTo(Teleport);
+  };
 };
 
 ]=])

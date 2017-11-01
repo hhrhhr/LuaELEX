@@ -6,6 +6,8 @@ assert(arg[#arg], "\n\n[ERROR] no output file\n")
 local LANG = dofile(arg[#arg-1])
 local OUT = assert(io.open(arg[#arg], "w+"))
 
+local COFF = 0.01
+
 --[[
 lua gar5_parser.lua *_Items.sec
     -> *.sec.lua
@@ -42,7 +44,11 @@ for i = 1, #arg-2 do
         local cD = d["class eCDynamicEntity"]
         local cE = d["class eCEntity"]
 
-        local pos = cD.position
+        local pos = cD.bb_mid
+        table.remove(pos, 2)
+        pos[1] = pos[1] * COFF
+        pos[2] = pos[2] * COFF
+
         local id = cE.string1
 
         if id:find("It_") == 1 then
@@ -75,7 +81,7 @@ for i = 1, #arg-2 do
     end
 end
 
-table.sort(items, function(a, b) return a[4] < b[4] end)
+table.sort(items, function(a, b) return a[3] < b[3] end)
 
 local lang = {}
 for k, v in pairs(used_lang) do
@@ -98,4 +104,18 @@ for i = 1, #items do
 end
 OUT:write("\n")
 
+-- funcs
+OUT:write("function add_markers() {\n")
+
+local q = { {"am", "Amulet"}, {"audio", "Audio"}, {"pic", "Picture"}, {"recipe", "Recipe"},
+    {"socket", "Socket"}, {"book", "Book"}, {"letter", "Letter"} }
+for i = 1, #q do
+    OUT:write("    for (var i = 0; i < arr_"..q[i][1]..".length; i++) {\n")
+    OUT:write("        var m = arr_"..q[i][1].."[i];\n")
+    OUT:write("        var pop = \"<b>\" + lang[m[3]] + \"</b><br />\" + lang[m[4]] + \"<br /><i>\" + m[2] + \"</i>\"\n")
+    OUT:write("        L.marker( [ m[1], m[0] ], { title: lang[m[3]], icon: "..q[i][2]:lower().." } )\n")
+    OUT:write("        .bindPopup(pop).addTo("..q[i][2]..");\n    };\n")
+end
+
+OUT:write("};\n")
 OUT:close()
