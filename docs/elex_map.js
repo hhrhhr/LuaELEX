@@ -21,18 +21,20 @@ var layer = L.tileLayer('', {
 });
 layer.setUrl('map_512/elex-{z}-{y}-{x}.webp')
 
-var Teleport = new L.LayerGroup(),
-    Amulet = new L.LayerGroup(),
-    Audio = new L.LayerGroup(),
-    Picture = new L.LayerGroup(),
-    Recipe = new L.LayerGroup(),
-    Socket = new L.LayerGroup(),
-    Book = new L.LayerGroup(),
-    Letter = new L.LayerGroup();
+var Zone = new L.LayerGroup();
+var Teleport = new L.LayerGroup();
+var Amulet = new L.LayerGroup();
+var Audio = new L.LayerGroup();
+var Picture = new L.LayerGroup();
+var Recipe = new L.LayerGroup();
+var Socket = new L.LayerGroup();
+var Book = new L.LayerGroup();
+var Letter = new L.LayerGroup();
 
-var l = [ layer, Teleport, Amulet, Audio, Picture, Recipe, Socket, Book, Letter ];
+var l = [ layer, Zone, Teleport, Amulet, Audio, Picture, Recipe, Socket, Book, Letter ];
 
-var icons = {
+var choice = {
+    "<img src='images/exclamation-red.png' />Zone": Zone,
     "<img src='images/teleport.png' />Teleport": Teleport,
     "<img src='images/ring.png' />Amulet": Amulet,
     "<img src='images/audio.png' />Audio": Audio,
@@ -50,6 +52,7 @@ var LeafIcon = L.Icon.extend({
         popupAnchor:  [0, 0]
 }});
 
+var zone = new LeafIcon({iconUrl: 'images/exclamation-red.png'});
 var teleport = new LeafIcon({iconUrl: 'images/teleport.png'});
 var amulet = new LeafIcon({iconUrl: 'images/ring.png'});
 var audio = new LeafIcon({iconUrl: 'images/audio.png'});
@@ -59,6 +62,7 @@ var socket = new LeafIcon({iconUrl: 'images/socket.png'});
 var book = new LeafIcon({iconUrl: 'images/book.png'});
 var letter = new LeafIcon({iconUrl: 'images/letter.png'});
 
+add_danger_zone_markers();
 add_teleport_markers();
 add_markers();
 
@@ -77,7 +81,7 @@ var mymap = L.map('mapid', {
 
 var baseMap = { "base": layer };
 
-L.control.layers(baseMap, icons, {hideSingleBase: true}).addTo(mymap);
+L.control.layers(baseMap, choice, {hideSingleBase: true}).addTo(mymap);
 L.control.scale({maxWidth: 400, updateWhenIdle: true}).addTo(mymap);
 
 var url1 = "<a href='elex_map_DE.html' title='Deutsch'>[DE]</a>"
