@@ -33,7 +33,7 @@ var Letter = new L.LayerGroup();
 
 var l = [ layer, Zone, Teleport, Amulet, Audio, Picture, Recipe, Socket, Book, Letter ];
 
-var choice = {
+var overlay = {
     "<img src='images/exclamation-red.png' />Zone": Zone,
     "<img src='images/teleport.png' />Teleport": Teleport,
     "<img src='images/ring.png' />Amulet": Amulet,
@@ -81,7 +81,7 @@ var mymap = L.map('mapid', {
 
 var baseMap = { "base": layer };
 
-L.control.layers(baseMap, choice, {hideSingleBase: true}).addTo(mymap);
+L.control.layers(baseMap, overlay, {hideSingleBase: true}).addTo(mymap);
 L.control.scale({maxWidth: 400, updateWhenIdle: true}).addTo(mymap);
 
 var url1 = "<a href='elex_map_DE.html' title='Deutsch'>[DE]</a>"
