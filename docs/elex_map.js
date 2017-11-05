@@ -14,12 +14,12 @@ L.CRS.Map = L.extend({}, L.CRS.Simple, {
 var layer = L.tileLayer('', {
     minNativeZoom: 0,
     maxNativeZoom: 3,
-    errorTileUrl: '404.webp',
+    errorTileUrl: '404.' + TILE_FMT,
     tileSize: tileRes,
     noWrap: true,
     continuousWorld: true,
 });
-layer.setUrl('map_512/elex-{z}-{y}-{x}.webp')
+layer.setUrl('map_512/elex-{z}-{y}-{x}.' + TILE_FMT)
 
 var Zone = new L.LayerGroup();
 var Teleport = new L.LayerGroup();
@@ -84,9 +84,9 @@ var baseMap = { "base": layer };
 L.control.layers(baseMap, overlay, {hideSingleBase: true}).addTo(mymap);
 L.control.scale({maxWidth: 400, updateWhenIdle: true}).addTo(mymap);
 
-var url1 = "<a href='elex_map_DE.html' title='Deutsch'>[DE]</a>"
-var url2 = "<a href='elex_map_EN.html' title='English'>[EN]</a>"
-var url3 = "<a href='elex_map_RU.html' title='Русский'>[RU]</a>"
+var url1 = "<a href='elex_map.html?l=de&f=" + TILE_FMT + "' title='Deutsch'>[DE]</a>"
+var url2 = "<a href='elex_map.html?l=en&f=" + TILE_FMT + "' title='English'>[EN]</a>"
+var url3 = "<a href='elex_map.html?l=ru&f=" + TILE_FMT + "' title='Русский'>[RU]</a>"
 var url4 = "<a href='https://github.com/hhrhhr/LuaELEX' title='source on Github'>[map source]</a>" 
 L.control.attribution()
 .addAttribution(url1)
