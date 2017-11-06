@@ -31,8 +31,9 @@ var Socket = new L.LayerGroup();
 var Sunglasses = new L.LayerGroup();
 var Book = new L.LayerGroup();
 var Letter = new L.LayerGroup();
+var Street = new L.LayerGroup();
 
-var l = [ layer, Zone, Teleport, Amulet, Audio, Picture, Recipe, Socket, Sunglasses, Book, Letter ];
+var l = [ layer, Zone, Teleport, Amulet, Audio, Picture, Recipe, Socket, Sunglasses, Book, Letter, Street ];
 
 var overlay = {
     "<img src='images/exclamation-red.png' />Zone": Zone,
@@ -44,7 +45,8 @@ var overlay = {
     "<img src='images/socket.png' />Socket": Socket,
     "<img src='images/eye.png' />Sunglasses": Sunglasses,
     "<img src='images/book.png' />Book": Book,
-    "<img src='images/letter.png' />Letter": Letter
+    "<img src='images/letter.png' />Letter": Letter,
+    "<img src='images/road.png' />Street": Street
 };
 
 var LeafIcon = L.Icon.extend({
@@ -64,8 +66,10 @@ var socket = new LeafIcon({iconUrl: 'images/socket.png'});
 var sun = new LeafIcon({iconUrl: 'images/eye.png'});
 var book = new LeafIcon({iconUrl: 'images/book.png'});
 var letter = new LeafIcon({iconUrl: 'images/letter.png'});
+var street = new LeafIcon({iconUrl: 'images/road.png'});
 
 add_danger_zone_markers();
+add_streets();
 add_teleport_markers();
 add_markers();
 

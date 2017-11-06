@@ -28,6 +28,7 @@ function _ADD(src) {
 
 _ADD("lang_" + LANG + ".js");
 _ADD("danger_zone.js");
+_ADD("street.js");
 _ADD("teleport.js");
 _ADD("items.js");
 _ADD("elex_map.js");
