@@ -28,10 +28,11 @@ var Audio = new L.LayerGroup();
 var Picture = new L.LayerGroup();
 var Recipe = new L.LayerGroup();
 var Socket = new L.LayerGroup();
+var Sunglasses = new L.LayerGroup();
 var Book = new L.LayerGroup();
 var Letter = new L.LayerGroup();
 
-var l = [ layer, Zone, Teleport, Amulet, Audio, Picture, Recipe, Socket, Book, Letter ];
+var l = [ layer, Zone, Teleport, Amulet, Audio, Picture, Recipe, Socket, Sunglasses, Book, Letter ];
 
 var overlay = {
     "<img src='images/exclamation-red.png' />Zone": Zone,
@@ -41,6 +42,7 @@ var overlay = {
     "<img src='images/picture.png' />Picture": Picture,
     "<img src='images/recipe.png' />Recipe": Recipe,
     "<img src='images/socket.png' />Socket": Socket,
+    "<img src='images/eye.png' />Sunglasses": Sunglasses,
     "<img src='images/book.png' />Book": Book,
     "<img src='images/letter.png' />Letter": Letter
 };
@@ -59,6 +61,7 @@ var audio = new LeafIcon({iconUrl: 'images/audio.png'});
 var picture = new LeafIcon({iconUrl: 'images/picture.png'});
 var recipe = new LeafIcon({iconUrl: 'images/recipe.png'});
 var socket = new LeafIcon({iconUrl: 'images/socket.png'});
+var sun = new LeafIcon({iconUrl: 'images/eye.png'});
 var book = new LeafIcon({iconUrl: 'images/book.png'});
 var letter = new LeafIcon({iconUrl: 'images/letter.png'});
 
@@ -68,8 +71,8 @@ add_markers();
 
 var mymap = L.map('mapid', {
     crs: L.CRS.Map,
-    center: [0, 0],
-    zoom: 1,
+    center: [-1024.0, -1024.0],
+    zoom: 2,
     minZoom: 0,
     maxZoom: 7,
     layers: l,
@@ -79,18 +82,26 @@ var mymap = L.map('mapid', {
     //zoomDelta: 0.5,
 });
 
+var hash = new L.Hash(mymap);
+
 var baseMap = { "base": layer };
 
 L.control.layers(baseMap, overlay, {hideSingleBase: true}).addTo(mymap);
 L.control.scale({maxWidth: 400, updateWhenIdle: true}).addTo(mymap);
 
-var url1 = "<a href='elex_map.html?l=de&f=" + TILE_FMT + "' title='Deutsch'>[DE]</a>"
-var url2 = "<a href='elex_map.html?l=en&f=" + TILE_FMT + "' title='English'>[EN]</a>"
-var url3 = "<a href='elex_map.html?l=ru&f=" + TILE_FMT + "' title='Русский'>[RU]</a>"
-var url4 = "<a href='https://github.com/hhrhhr/LuaELEX' title='source on Github'>[map source]</a>" 
+var url1 = "<a href='elex_map.html?l=de&f=webp' title='Deutsch'>[DE WebP]</a>"
+var url2 = "<a href='elex_map.html?l=en&f=webp' title='English'>[EN WebP]</a>"
+var url3 = "<a href='elex_map.html?l=ru&f=webp' title='Русский'>[RU WebP]</a>"
+var url4 = "<a href='elex_map.html?l=de&f=jpg' title='Deutsch'>[DE JPEG]</a>"
+var url5 = "<a href='elex_map.html?l=en&f=jpg' title='English'>[EN JPEG]</a>"
+var url6 = "<a href='elex_map.html?l=ru&f=jpg' title='Русский'>[RU JPEG]</a>"
+var url7 = "<a href='https://github.com/hhrhhr/LuaELEX' title='source on Github'>[map source]</a>" 
 L.control.attribution()
 .addAttribution(url1)
 .addAttribution(url2)
 .addAttribution(url3)
 .addAttribution(url4)
+.addAttribution(url5)
+.addAttribution(url6)
+.addAttribution(url7)
 .addTo(mymap);

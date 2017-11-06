@@ -307,6 +307,16 @@ var arr_socket = [
 [ 470.80484375, -2190.12328125, "It_SocketItem_Yellow_Small", 0x6B1FF7C0, 0xED4FBB39 ],
 ];
 
+var arr_sun = [
+[ -752.26515625, -816.756875, "It_Sun_ItemSight", 0x6EEE0A38, 0x2E977271 ],
+[ 276.26076171875, -2632.0846875, "It_Sun_ItemSight", 0x6EEE0A38, 0x2E977271 ],
+[ -1720.93453125, -589.4981640625, "It_Sun_ItemSight", 0x6EEE0A38, 0x2E977271 ],
+[ -2020.30109375, -2803.7215625, "It_Sun_SenseLife", 0xE5BE67E8, 0xA567D021 ],
+[ -233.87091796875, -286.65037109375, "It_Sun_SenseMachines", 0x6AE24F90, 0x35072C49 ],
+[ -1252.680703125, 288.13541015625, "It_Sun_SenseMachines", 0x6AE24F90, 0x35072C49 ],
+[ 1277.96296875, -373.380546875, "It_Sun_SixthSense", 0xFE85CE98, 0xB35C3DF1 ],
+];
+
 var arr_book = [
 [ -1886.1078125, -370.8993359375, "It_Wri_Book_ABE_MountaineerDiary", 0x0977DC77, 0x317496B0 ],
 [ -1191.6171875, -666.41484375, "It_Wri_Book_ABE_SmallRaidedCamp", 0x624F02BA, 0x9210D9D3 ],
@@ -645,6 +655,12 @@ function add_markers() {
         var pop = "<b>" + lang[m[3]] + "</b><br />" + lang[m[4]] + "<br /><i>" + m[2] + "</i>"
         L.marker( [ m[1], m[0] ], { title: lang[m[3]], icon: socket } )
         .bindPopup(pop).addTo(Socket);
+    };
+    for (var i = 0; i < arr_sun.length; i++) {
+        var m = arr_sun[i];
+        var pop = "<b>" + lang[m[3]] + "</b><br />" + lang[m[4]] + "<br /><i>" + m[2] + "</i>"
+        L.marker( [ m[1], m[0] ], { title: lang[m[3]], icon: sun } )
+        .bindPopup(pop).addTo(Sunglasses);
     };
     for (var i = 0; i < arr_book.length; i++) {
         var m = arr_book[i];
