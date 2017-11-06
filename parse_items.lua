@@ -12,7 +12,7 @@ local COFF = 0.01
 lua gar5_parser.lua *_Items.sec
     -> *.sec.lua
     
-lua parse_items.lua item1.lua [item2.lua[ ...] ] <lang.lua> <output.txt>
+lua parse_items.lua <item1.lua> [item2.lua [...] ] <lang.lua> <output.txt>
 --]]
 
 local items = {}
@@ -63,6 +63,7 @@ for i = 1, #arg-2 do
             or id:find("Recipe", 4) == 4
             or id:find("Ri_", 4) == 4
             or id:find("SocketItem_", 4) == 4
+            or id:find("Sun_", 4) == 4
             or id:find("Wri_Book", 4) == 4
             or id:find("Wri_Letter", 4) == 4
 --            or id:find("It_1h_", 4) == 4
@@ -108,7 +109,7 @@ OUT:write("\n")
 OUT:write("function add_markers() {\n")
 
 local q = { {"am", "Amulet"}, {"audio", "Audio"}, {"pic", "Picture"}, {"recipe", "Recipe"},
-    {"socket", "Socket"}, {"book", "Book"}, {"letter", "Letter"} }
+    {"socket", "Socket"}, {"sun", "Sunglasses"}, {"book", "Book"}, {"letter", "Letter"} }
 for i = 1, #q do
     OUT:write("    for (var i = 0; i < arr_"..q[i][1]..".length; i++) {\n")
     OUT:write("        var m = arr_"..q[i][1].."[i];\n")

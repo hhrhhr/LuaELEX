@@ -17,9 +17,8 @@ for z = 0, 5 do
 end
 
 -- parse file list
-
 for l in io.lines(filelist) do
-    for z, y, x in string.gmatch(l, "-(%d+)-(%d+)-(%d+).tga") do
+    for z, y, x in string.gmatch(l, "-(%d+)-(%d+)-(%d+)") do
         z = tonumber(z)
         y = tonumber(y)
         x = tonumber(x)
@@ -29,13 +28,13 @@ end
 
 
 local magick4 = [[
+echo %s
 magick convert ^
 ( "%s" "%s" +append ) ^
 ( "%s" "%s" +append ) ^
 -append ^
--quality 33 -define webp:lossless=false ^
+-quality 75 -define webp:lossless=false ^
 "%s"
-echo %s
 ]]
 local tile = "%s\\elex-%d-%d-%d.webp"
 local _404 = "404.webp"
@@ -59,7 +58,7 @@ for z = 0, 5 do
                 t2 = t2 or _404
                 t3 = t3 or _404
                 t4 = t4 or _404
-                local cmd = magick4:format(t1, t2, t3, t4, out, out)
+                local cmd = magick4:format(out, t1, t2, t3, t4, out)
                 print(cmd)
             end
         end

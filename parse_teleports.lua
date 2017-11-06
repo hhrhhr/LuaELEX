@@ -12,7 +12,7 @@ local COFF = 0.01
 lua gar5_parser.lua World_Teleporter.sec
     -> World_Teleporter.sec.lua
     
-lua parse_teleports.lua World_Teleporter.sec.lua > teleport.js
+lua parse_teleports.lua World_Teleporter.sec.lua teleport.js
     -> for Leaflet
 --]]
 
