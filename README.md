@@ -1,12 +1,12 @@
 # Demands
 * [Lua 5.3](https://www.lua.org/)
 * [lua-zlib](https://github.com/brimworks/lua-zlib)
-* [Compressonator](https://gpuopen.com/gaming-product/compressonator/)
+* [detex](https://github.com/hglm/detex)
 * [ImageMagick](https://www.imagemagick.org/script/index.php)
 
 # Get map tiles
 
-[![map example](/docs/img/map_example.jpg?raw=true "Example low quality map with Leafjet")](https://hhrhhr.github.io/LuaELEX/elex_map_RU.html)
+[![map example](/docs/img/map_example.jpg?raw=true "Example low quality map with Leaflet")](https://hhrhhr.github.io/LuaELEX/elex_map.html)
 
 ````
 if not exist .\map_dds mkdir .\map_dds
@@ -19,23 +19,23 @@ algo:
 * converts the name into a *z-y-x* tile format (-> *elex-5-57-29*)
 * copies the tiles in the dds format with new names to the specified ````.\map_dds```` directory
 
-Most of .dds is in DX10 format with BC7 compression. For mass conversion I used Compressonator (I have not found other CLI-utilities supporting DX10-textures yet):
+Most of .dds is in DX11 format with BC7 compression. For mass conversion I used detex:
 
 ````
-if not exist .\map_tga mkdir .\map_tga
-for /r .\map_dds %i in (*.dds) do @CompressonatorCLI "%i" ".\map_tga\%~ni.tga"
+if not exist .\map_png mkdir .\map_png
+for /r .\map_dds %i in (*.dds) do @detex-convert -o RGB8 "%i" ".\map_png\%~ni.png"
 ````
 
-For a web-map tiles with the size 256x256 are pretty small, so you can combine them into tiles 512x512 by using ImageMagick and the script ````tga_256_to_512_webp.lua````:
+For a web-map tiles with the size 256x256 px are pretty small, so you can combine them into tiles 512x512 px by using ImageMagick and the script ````256_to_512.lua````:
 
 ![about merge](/docs/img/merge.jpg?raw=true "merge 4 to 1")
 
 ````
 rem Make filelist
-dir /b /s .\map_tga\*.tga > .\map_tga\tga_filelist.txt
+dir /b /s .\map_png\*.png > .\map_png\filelist.txt
 
-if not exist .\map_www mkdir .\map_www
-lua tga_256_to_512_webp.lua .\map_tga\tga_filelist.txt .\map_www > convert.cmd
+if not exist .\map_512 mkdir .\map_512
+lua 256_to_512.lua .\map_png\filelist.txt .\map_512 > convert.cmd
 
 rem Running the resulting batch-file
 convert.cmd
@@ -43,9 +43,9 @@ convert.cmd
 
 After that, instead of 1983 pieces of original tiles gets only 540.
 
-To customize the output format, you need to edit the variable ````magick4```` and ````tile```` in ````tga_256_to_512_webp.lua````.
+To customize the output format, you need to edit the variable ````magick4```` and ````tile```` in ````256_to_512.lua````.
 
-Now the received tiles can be used, for example, [in a Leafjet-based map](https://hhrhhr.github.io/LuaELEX/elex_map_RU.html) (low quality, only 4 levels).
+Now the received tiles can be used, for example, [in a Leaflet-based map](https://hhrhhr.github.io/LuaELEX/elex_map.html) (low quality, only 4 levels).
 
 # Parse World_Teleporter.sec
 
@@ -74,7 +74,7 @@ lua gar5_parser.lua World_Teleporter.sec
 A file *World_Teleporter.sec.lua* appears next to the file *World_Teleporter.sec*. Use another script to get coordinates and descriptions of teleports:
 
 ````
-lua parse_teleports.lua World_Teleporter.sec.lua language.lua > teleport.txt
+lua parse_teleports.lua World_Teleporter.sec.lua language.lua teleport.js
 ````
 
 The resulting file contains a JS script that can be connected to the LeafJet based map.
@@ -95,4 +95,4 @@ Convert ````\localization\w_strings.bin```` to Lua table:
 lua w_strings.lua <w_strings.bin> <output.lua> [lang]
 ````
 
-*lang* — language code, 0...15 (in patch 1.1)
+*lang* — language code, 0...7 is main table, 8...15 is comments (in patch 1.1).
