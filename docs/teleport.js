@@ -44,10 +44,14 @@ var arr_teleport = [
 [ -171.15876953125, -2467.2121875, "MapMarker_Location_TAV_OUTIsland", 0xE0BE8B47 ],
 ];
 
-function add_teleport_markers() {
+init_marker.push(
+  function () {
     for (var i = 0; i < arr_teleport.length; i++) {
-        var m = arr_teleport[i];
-        var pop = lang[m[3]] + "<br /><i>" + m[2] + "</i>";
-        L.marker( [ m[1], m[0] ], { title: lang[m[3]], icon: teleport } ).bindPopup(pop).addTo(Teleport);
+      var m = arr_teleport[i];
+      var pop = lang[m[3]] + "<br /><i>" + m[2] + "</i>";
+      L.marker( [ m[1], m[0] ], { title: lang[m[3]], icon: icon["teleport"] } )
+      .bindPopup(pop).addTo(layer["teleport"]);
     };
-};
+    arr_teleport = null;
+  }
+);

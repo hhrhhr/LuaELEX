@@ -392,12 +392,13 @@ var arr_street = [
 ["MapStreet250 #391",2,[[-2386.02,-982.49],[-2393.20,-979.93],[-2403.43,-977.34],]],
 ];
 
-function add_streets(){
-  for(var i=0;i<arr_street.length;i++){
-    var m=arr_street[i];
-    L.polyline(m[2],{color:'yellow',weight:m[1],opacity:0.5,interactive:false,smoothFactor:2.0})
-    .addTo(Street);
-  };
-  arr_street=null;
-};
-
+init_marker.push(
+  function (){
+    for(var i=0;i<arr_street.length;i++){
+      var m=arr_street[i];
+      L.polyline(m[2],{color:'yellow',weight:m[1],opacity:0.5,interactive:false,smoothFactor:2.0})
+      .addTo(layer["street"]);
+    };
+    arr_street=null;
+  }
+);

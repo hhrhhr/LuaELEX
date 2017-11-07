@@ -43,6 +43,12 @@ lang[0xE0BE8B47] = "Old factory";
 lang[0xF2DEF0F2] = "Sandy Pines";
 lang[0xF7347928] = "Southern Pass";
 
+lang[0x1456A67B] = "---";
+lang[0x3E252DA2] = "Elexit Vein";
+lang[0x3E2653FA] = "Gold Vein";
+lang[0x3E2779EC] = "Iron Ore Vein";
+lang[0x7D75CD15] = "Sulfur Vein";
+
 lang[0x0105189B] = "Use this to create a small health potion.";
 lang[0x018B9782] = "Old Short Letter";
 lang[0x018B9783] = "Invoice";

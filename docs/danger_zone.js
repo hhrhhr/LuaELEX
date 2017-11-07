@@ -334,23 +334,26 @@ var arr_danger_zone = [
 [ 450.2215234375, -383.9412109375, 5, 0, "orange", 0.4, 37.337465820312 ],
 ];
 
-function add_danger_zone_markers() {
-  for (var i = 0; i < arr_danger_zone.length; i++) {
-    var m = arr_danger_zone[i];
-    var tooltip = ""
-    for (var t = 0; t < m[2]; t++)
-        tooltip += "<img src='images/skull.png' />";
-    var l;
-    var stroke = (m[2] > 3) ? true : false;
-    if (m[3] == 0) {
-      l = L.circle([ m[1], m[0] ],
-      { radius: m[6], color: m[4], weight: 1, stroke: stroke, fillOpacity: m[5] })
-    } else {
-      l = L.polygon( [ [m[1], m[0] ], [ m[7], m[6] ], [ m[9], m[8] ], [ m[11], m[10] ] ],
-      { color: m[4], weight: 1, stroke: stroke, fillOpacity: m[5] } );
+init_marker.push(
+  function () {
+    for (var i = 0; i < arr_danger_zone.length; i++) {
+      var m = arr_danger_zone[i];
+      var tooltip = ""
+      for (var t = 0; t < m[2]; t++)
+          tooltip += "<img src='images/skull.png' />";
+      var l;
+      var stroke = (m[2] > 3) ? true : false;
+      if (m[3] == 0) {
+        l = L.circle([ m[1], m[0] ],
+        { radius: m[6], color: m[4], weight: 1, stroke: stroke, fillOpacity: m[5] })
+      } else {
+        l = L.polygon( [ [m[1], m[0] ], [ m[7], m[6] ], [ m[9], m[8] ], [ m[11], m[10] ] ],
+        { color: m[4], weight: 1, stroke: stroke, fillOpacity: m[5] } );
+      };
+      if (tooltip.length)
+          l.bindTooltip(tooltip, { sticky: true });
+      l.addTo(layer["zone"]);
     };
-    l.bindTooltip(tooltip, { sticky: true }).addTo(Zone);
-  };
-  arr_danger_zone = null;
-};
-
+    arr_danger_zone = null;
+  }
+);

@@ -43,6 +43,12 @@ lang[0xE0BE8B47] = "Alte Fabrik";
 lang[0xF2DEF0F2] = "Sandy Pines";
 lang[0xF7347928] = "Südpass";
 
+lang[0x1456A67B] = "---";
+lang[0x3E252DA2] = "Elexitader";
+lang[0x3E2653FA] = "Goldader";
+lang[0x3E2779EC] = "Eisenader";
+lang[0x7D75CD15] = "Schwefelader";
+
 lang[0x0105189B] = "Damit kann man einen Trank herstellen, der kleinere Wunden heilt.";
 lang[0x018B9782] = "Alter kurzer Brief";
 lang[0x018B9783] = "Rechnungsschreiben";
