@@ -39,6 +39,11 @@ function BinaryReader:char()  -- char
     return self.f_handle:read(1)
 end
 
+function BinaryReader:bool()  -- unsigned byte
+    local b = self.f_handle:read(4)
+    return b == "\0\0\0\0" and "false" or "true"
+end
+
 function BinaryReader:uint8()  -- unsigned byte
     local u8 = string.unpack("B", self.f_handle:read(1))
     return u8
@@ -116,6 +121,7 @@ function BinaryReader:sint64(endian_big)  -- signed long long integer
     else
         s64 = string.unpack("<i8", self.f_handle:read(8))
     end
+    return s64
 end
 
 function BinaryReader:hex32(inverse)  -- hex

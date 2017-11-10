@@ -117,7 +117,7 @@ end
 
 local function read_enum()
     local hash, val = r:uint32(), r:sint32()
-    wf("%d --[[%s]]", val, get_name(hash))
+    wf("{ %d, %q }", val, get_name(hash))
 end
 
 local function read_script_proxy(comment)
@@ -197,6 +197,18 @@ local function read_arr_float(level)
     wr("}")
 end
 
+local function read_arr_uint(level, count)
+    count = count or r:uint32()
+    wf("{ -- %d entries\n", count)
+    for i = 1, count do
+        tab(level+1)
+        wf("[%d] = ", i)
+        wr(r:uint32())
+        wf("%s -- %d/%d\n", i<count and "," or "", i, count)
+    end
+    tab(level)
+    wr("}")
+end
 
 local function read_unknown_bytes(size, comment)
     if size == 0 then return end
@@ -252,6 +264,7 @@ hash["bool"]         = function() wr(r:uint32() == 1 and "true" or "false") end
 hash["float"]        = function() wr(r:float()) end
 hash["int"]          = function() wr(r:sint32()) end
 hash["unsigned int"] = function() wr(r:uint32()) end
+hash["__int64"]      = function() wr(r:uint64()) end
 
 hash["class bCGuid"]                = function() read_guid() end
 hash["class eCEntityProxy"]         = function() read_guid() end
@@ -263,6 +276,8 @@ hash["class bCVector"]      = function() read_float(3) end
 hash["class bCFloatColor"]  = function() read_float(3) end
 hash["class bCRange1"]      = function() read_float(2) end
 hash["class eCWeatherOverwrite"] = function(level) tab(level); read_float(3) end
+
+hash["class bCDateTime"] = function() wr("\""); read_time(); wr("\"") end
 
 hash["class eCLocString"] = function()
     local hex = r:hex32(1)
@@ -278,6 +293,9 @@ hash["class eCVegetationDefinitionProxy"] = function() read_string() end
 hash["class eCCollisionShapeList"] = function(level) read_array(level) end
 hash["class bTSceneRefPropertyArray<class gCStateGraphEventFilter *>"] = function(level) read_array(level) end
 hash["class bTSceneRefPtrArray<class gCStateGraphState *>"] = function(level) read_array(level) end
+
+
+--[[ unknown hash funcs ]]-----------------------------------------------------
 
 hash["0xBD7025AF"] = function(level, size)
     local start = r:pos()
@@ -483,7 +501,6 @@ local function read_eCEntity(level)
     tab(level); wr("string1 = "); read_string(); wr(",\n")
     read_unknown_bytes(6, "eCEntity")
 
-
     tab(level); wr("eCEntity1 = {\n")
     local count = r:uint8()
     for i = 1, count do
@@ -496,6 +513,7 @@ local function read_eCEntity(level)
         wf("}, -- eCE d1 %d/%d\n", i, count)
     end
     tab(level); wr("}, --eCEntity1\n")
+
     tab(level); wr("eCEntity2 = {\n")
     count = r:uint32()
     for i = 1, count do
@@ -507,8 +525,6 @@ local function read_eCEntity(level)
         tab(level)
         wf("}%s -- eCE d2 %d/%d\n", i<count and "," or "", i, count)
 
---        tab(level)
---        wr("}, -- eCEntity2\n")
     end
     tab(level); wr("} --eCEntity2\n")
 
@@ -659,11 +675,6 @@ read_FOUR = function(level)
         print("\n!!! unknown FOUR: " .. FOUR .. "\n\n")
         assert(false)
     end
-end
-
-
-local function read_GSG3()
-    r:idstring("GAR5")
 end
 
 
