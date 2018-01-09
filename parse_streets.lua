@@ -68,15 +68,16 @@ OUT:write("];\n")
 
 OUT:write([[
 
-function add_streets(){
-  for(var i=0;i<arr_street.length;i++){
-    var m=arr_street[i];
-    L.polyline(m[2],{color:'yellow',weight:m[1],opacity:0.5,interactive:false,smoothFactor:2.0})
-    .addTo(Street);
-  };
-  arr_street=null;
-};
-
+init_marker.push(
+  function (){
+    for(var i=0;i<arr_street.length;i++){
+      var m=arr_street[i];
+      L.polyline(m[2],{color:'yellow',weight:m[1],opacity:0.5,interactive:false,smoothFactor:2.0})
+      .addTo(layer["street"]);
+    };
+    arr_street=null;
+  }
+);
 ]])
 
 OUT:close()

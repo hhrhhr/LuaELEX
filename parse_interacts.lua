@@ -120,7 +120,7 @@ init_marker.push(
       var id = lang[m[3]];
       var pop = "<b>" + id + "</b><br /><i>" + m[2] + "</i>";
       L.marker( [ m[1], m[0] ], { title: id, icon: icon[m[4]] } )
-      .bindPopup(pop).addTo(Orevein);
+      .bindPopup(pop).addTo(layer["orevein"]);
     };
     arr_ore = null;
   }

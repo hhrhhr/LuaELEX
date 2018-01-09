@@ -6,13 +6,18 @@ assert(arg[3], "\n\n[ERROR] no output file\n")
 local LANG = dofile(arg[2])
 local OUT = assert(io.open(arg[3], "w+"))
 
+local owr = function(fmt, ...)
+    local str = string.format(fmt, ...)
+    OUT:write(str)
+end
+
 local COFF = 0.01
 
 --[[
 lua gar5_parser.lua World_Teleporter.sec
     -> World_Teleporter.sec.lua
     
-lua parse_teleports.lua World_Teleporter.sec.lua teleport.js
+lua parse_teleports.lua <World_Teleporter.sec.lua> <lang.lua> <teleport.js>
     -> for Leaflet
 --]]
 
@@ -60,36 +65,40 @@ end
 
 
 local lang = {}
-for k, v in pairs(used_lang) do
-    table.insert(lang, {k, LANG[k] or "---"})
+for k, _ in pairs(used_lang) do
+    local str = LANG[k]
+    if not str then str = "---" end
+    table.insert(lang, {k, str})
 end
 used_lang = nil
 table.sort(lang, function(a, b) return a[1] < b[1] end)
 
 -- lang array
-OUT:write("var lang = [];\n")
+owr("var lang = [];\n")
 for i = 1, #lang do
     local l = lang[i]
-    OUT:write(string.format("lang[0x%08X] = %q;\n", l[1], l[2]))
+    owr("lang[0x%08X] = %q;\n", l[1], l[2])
 end
 
-OUT:write("\nvar arr_teleport = [\n")
+owr("\nvar arr_teleport = [\n")
 for i = 1, #teleport do
-    OUT:write("[ " .. table.concat(teleport[i], ", ") .. " ],\n")
+    owr("[ " .. table.concat(teleport[i], ", ") .. " ],\n")
 end
-OUT:write("];\n")
+owr("];\n")
 
-OUT:write([=[
+owr([=[
 
-function add_teleport_markers() {
-  for (var i = 0; i < arr_teleport.length; i++) {
-    var m = arr_teleport[i];
-    var pop = lang[m[3]] + "<br /><i>" + m[2] + "</i>";
-    L.marker( [ m[1], m[0] ], { title: lang[m[3]], icon: teleport } )
-    .bindPopup(pop).addTo(Teleport);
-  };
-};
-
+init_marker.push(
+  function () {
+    for (var i = 0; i < arr_teleport.length; i++) {
+      var m = arr_teleport[i];
+      var pop = lang[m[3]] + "<br /><i>" + m[2] + "</i>";
+      L.marker( [ m[1], m[0] ], { title: lang[m[3]], icon: icon["teleport"] } )
+      .bindPopup(pop).addTo(layer["teleport"]);
+    };
+    arr_teleport = null;
+  }
+);
 ]=])
 
 OUT:close()

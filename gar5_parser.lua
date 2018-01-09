@@ -285,6 +285,33 @@ hash["class eCLocString"] = function()
     wf(" --[[L(0x%s)]]", hex)
 end
 
+hash["class bCUnicodeString"] = function()
+    local tochar = string.char
+    local function utf16_to_utf8(u16)
+        local u8 = {}
+        if u16 < 127 then
+            u8[1] = tochar(u16 & 255)
+        elseif u16 <= 2047 then
+            u8[1] = tochar(u16 >> 6 & 31 | 192)
+            u8[2] = tochar(u16 & 63 | 128)
+        else
+            u8[1] = tochar(u16 >> 12 & 15 | 224)
+            u8[2] = tochar(u16 >> 6 & 63 | 128)
+            u8[3] = tochar(u16 & 63 | 128)
+        end
+        return table.concat(u8)
+    end
+
+    local sz = r:uint16()
+    local str = {}
+    while sz > 0 do
+        table.insert(str, utf16_to_utf8(r:uint16()))
+        sz = sz - 1
+    end
+
+    wr("\"" .. table.concat(str) .. "\"")
+end
+
 hash["class bCString"] = function() read_string() end
 hash["class gCEffectProxy"] = function() read_string() end
 hash["class gCStateGraphTransition"] = function() read_string() end
@@ -497,7 +524,6 @@ local function read_eCEntity(level)
     level = level + 1
 
     tab(level); wr("guid2 = "); read_guid(); wr(",\n")
---    read_unknown_bytes(16, "eCEntity")
     tab(level); wr("string1 = "); read_string(); wr(",\n")
     read_unknown_bytes(6, "eCEntity")
 

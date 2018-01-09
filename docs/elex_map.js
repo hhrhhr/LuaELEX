@@ -18,7 +18,7 @@ L.CRS.Map = L.extend({}, L.CRS.Simple, {
 
 var layerBaseWebP = L.tileLayer("", {
     minNativeZoom: 0,
-    maxNativeZoom: 3,
+    maxNativeZoom: 5,
     errorTileUrl: "404.webp",
     tileSize: tileRes,
     noWrap: true,
@@ -28,7 +28,7 @@ layerBaseWebP.setUrl("map_512/elex-{z}-{y}-{x}.webp")
 
 var layerBaseJPG = L.tileLayer("", {
     minNativeZoom: 0,
-    maxNativeZoom: 3,
+    maxNativeZoom: 5,
     errorTileUrl: "404.jpg",
     tileSize: tileRes,
     noWrap: true,
